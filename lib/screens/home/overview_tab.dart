@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../models/family_model.dart';
 import '../../providers/family_provider.dart';
+import '../../providers/transaction_provider.dart';
+import '../family/family_actions.dart';
 import '../../utils/format_currency.dart';
 import '../../widgets/family/category_progress_tile.dart';
 import '../../widgets/family/customize_report_sheet.dart';
@@ -46,10 +48,11 @@ class _OverviewTabState extends State<OverviewTab> {
             const SizedBox(height: 8),
             for (final family in provider.families)
               ListTile(
-                leading: const Icon(Icons.home_outlined,
-                    color: AppColors.primary),
+                leading:
+                    const Icon(Icons.home_outlined, color: AppColors.primary),
                 title: Text(family.name),
-                subtitle: Text('${family.code} · ${family.memberCount} thành viên'),
+                subtitle:
+                    Text('${family.code} · ${family.memberCount} thành viên'),
                 trailing: family.familyId == provider.selectedFamilyId
                     ? const Icon(Icons.check, color: AppColors.primary)
                     : null,
@@ -69,81 +72,130 @@ class _OverviewTabState extends State<OverviewTab> {
   Widget build(BuildContext context) {
     final familyProvider = context.watch<FamilyProvider>();
     final family = familyProvider.detail(familyProvider.selectedFamilyId);
+    if (family == null) {
+      return _EmptyOverview(loading: familyProvider.loading);
+    }
     final net = family.totalIncome - family.totalExpense;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _FamilySwitcherCard(
-            familyName: family.name,
-            onChange: () => _openFamilyPicker(familyProvider),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return RefreshIndicator(
+        onRefresh: () async {
+          await context.read<FamilyProvider>().load();
+          if (!context.mounted) return;
+          await context.read<TransactionProvider>().load();
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Tổng quan', style: AppTypography.headlineSm),
-              _PeriodTabs(
-                period: _period,
-                onSelect: (p) {
-                  if (p == _Period.custom) {
-                    _openCustomizeSheet();
-                  } else {
-                    setState(() => _period = p);
-                  }
-                },
+              _FamilySwitcherCard(
+                familyName: family.name,
+                onChange: () => _openFamilyPicker(familyProvider),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.calendar_today_outlined,
-                    size: 16, color: AppColors.outline),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text('Khoảng thời gian: ${_periodRangeLabel()}',
-                      style: AppTypography.bodySm
-                          .copyWith(color: AppColors.onSurfaceVariant)),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Tổng quan', style: AppTypography.headlineSm),
+                  _PeriodTabs(
+                    period: _period,
+                    onSelect: (p) {
+                      if (p == _Period.custom) {
+                        _openCustomizeSheet();
+                      } else {
+                        setState(() => _period = p);
+                      }
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _RemainingCard(family: family),
-          const SizedBox(height: 20),
-          Text('Báo cáo thu - chi', style: AppTypography.headlineSm),
-          const SizedBox(height: 12),
-          _ReportComparisonCard(income: family.totalIncome, expense: family.totalExpense, net: net),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Cơ cấu phân bổ dòng tiền', style: AppTypography.headlineSm),
-              Text('${family.categories.length} hũ chi tiêu',
-                  style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_today_outlined,
+                        size: 16, color: AppColors.outline),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text('Khoảng thời gian: ${_periodRangeLabel()}',
+                          style: AppTypography.bodySm
+                              .copyWith(color: AppColors.onSurfaceVariant)),
+                    ),
+                    GestureDetector(
+                      onTap: _openCustomizeSheet,
+                      child: Text('Chọn ngày',
+                          style: AppTypography.labelMd
+                              .copyWith(color: AppColors.primary)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              _RemainingCard(family: family),
+              const SizedBox(height: 20),
+              Text('Báo cáo thu - chi', style: AppTypography.headlineSm),
+              const SizedBox(height: 12),
+              _ReportComparisonCard(
+                  income: family.totalIncome,
+                  expense: family.totalExpense,
+                  net: net),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Cơ cấu phân bổ dòng tiền',
+                      style: AppTypography.headlineSm),
+                  Text('${family.categories.length} hũ chi tiêu',
+                      style: AppTypography.labelSm
+                          .copyWith(color: AppColors.outline)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              for (final category in family.categories)
+                CategoryProgressTile(category: category),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('Đánh giá & dự đoán tài chính gia đình',
+                        style: AppTypography.headlineSm),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondaryContainer,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(_ratingLabel(family),
+                        style: AppTypography.labelSm
+                            .copyWith(color: AppColors.secondary)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _ForecastCard(family: family),
             ],
           ),
-          const SizedBox(height: 12),
-          for (final category in family.categories)
-            CategoryProgressTile(category: category),
-          const SizedBox(height: 8),
-          Text('Đánh giá & dự đoán tài chính gia đình',
-              style: AppTypography.headlineSm),
-          const SizedBox(height: 12),
-          const _ForecastCard(),
-        ],
-      ),
-    );
+        ));
+  }
+
+  /// Xếp hạng theo tỷ lệ chi/thu của kỳ hiện tại.
+  String _ratingLabel(FamilyDetailModel family) {
+    if (family.totalIncome <= 0) return 'Chưa đủ dữ liệu';
+    final ratio = family.totalExpense / family.totalIncome;
+    if (ratio <= 0.7) return 'Hạng A • Tốt';
+    if (ratio <= 0.9) return 'Hạng B • Khá';
+    return 'Hạng C • Cần chú ý';
   }
 
   String _periodRangeLabel() {
@@ -177,7 +229,8 @@ class _FamilySwitcherCard extends StatelessWidget {
               color: AppColors.pastelBlush,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.home_outlined, color: AppColors.primary, size: 18),
+            child: const Icon(Icons.home_outlined,
+                color: AppColors.primary, size: 18),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -185,7 +238,8 @@ class _FamilySwitcherCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Tổ ấm đang quản lý',
-                    style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.outline)),
                 Text(familyName, style: AppTypography.titleSm),
               ],
             ),
@@ -223,18 +277,24 @@ class _PeriodTabs extends StatelessWidget {
           margin: const EdgeInsets.only(left: 6),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primaryContainer : AppColors.surfaceContainerLow,
+            color: selected
+                ? AppColors.primaryContainer
+                : AppColors.surfaceContainerLow,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Row(
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 12, color: selected ? Colors.white : AppColors.outline),
+                Icon(icon,
+                    size: 12,
+                    color: selected ? Colors.white : AppColors.outline),
                 const SizedBox(width: 4),
               ],
               Text(label,
                   style: AppTypography.labelSm.copyWith(
-                      color: selected ? Colors.white : AppColors.onSurfaceVariant)),
+                      color: selected
+                          ? Colors.white
+                          : AppColors.onSurfaceVariant)),
             ],
           ),
         ),
@@ -280,7 +340,8 @@ class _RemainingCard extends StatelessWidget {
                   size: 16, color: AppColors.outline),
               const SizedBox(width: 6),
               Text('Tổng tiền còn lại',
-                  style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                  style:
+                      AppTypography.labelSm.copyWith(color: AppColors.outline)),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -288,8 +349,12 @@ class _RemainingCard extends StatelessWidget {
                   color: AppColors.secondaryContainer,
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: Text('+${family.budgetGrowthPercent}% so với kỳ trước',
-                    style: AppTypography.labelSm.copyWith(color: AppColors.secondary)),
+                child: Text(
+                    family.budgetGrowthPercent == 0
+                        ? 'Kỳ hiện tại'
+                        : '${family.budgetGrowthPercent > 0 ? '+' : ''}${family.budgetGrowthPercent}% so với kỳ trước',
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.secondary)),
               ),
             ],
           ),
@@ -323,7 +388,10 @@ class _RemainingCard extends StatelessWidget {
 
 class _MiniStat extends StatelessWidget {
   const _MiniStat(
-      {required this.label, required this.value, required this.icon, required this.color});
+      {required this.label,
+      required this.value,
+      required this.icon,
+      required this.color});
 
   final String label;
   final double value;
@@ -335,13 +403,15 @@ class _MiniStat extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+        Text(label,
+            style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
         const SizedBox(height: 4),
         Row(
           children: [
             Icon(icon, size: 14, color: color),
             const SizedBox(width: 4),
-            Text('${formatCurrency(value)} đ', style: AppTypography.titleSm.copyWith(color: color)),
+            Text('${formatCurrency(value)} đ',
+                style: AppTypography.titleSm.copyWith(color: color)),
           ],
         ),
       ],
@@ -360,9 +430,11 @@ class _ReportComparisonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxValue = income > expense ? income : expense;
-    double ratio(double v) => maxValue == 0 ? 0 : (v / maxValue).clamp(0.05, 1.0);
+    double ratio(double v) =>
+        maxValue == 0 ? 0 : (v / maxValue).clamp(0.05, 1.0);
 
-    Widget bar(String label, double incomeVal, double expenseVal, bool highlight) {
+    Widget bar(
+        String label, double incomeVal, double expenseVal, bool highlight) {
       return Expanded(
         child: Column(
           children: [
@@ -376,8 +448,10 @@ class _ReportComparisonCard extends StatelessWidget {
                     width: 10,
                     height: 64 * ratio(incomeVal),
                     decoration: BoxDecoration(
-                      color: highlight ? AppColors.primary : AppColors.pastelBlush,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                      color:
+                          highlight ? AppColors.primary : AppColors.pastelBlush,
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(4)),
                     ),
                   ),
                   const SizedBox(width: 3),
@@ -386,7 +460,8 @@ class _ReportComparisonCard extends StatelessWidget {
                     height: 64 * ratio(expenseVal),
                     decoration: BoxDecoration(
                       color: AppColors.secondaryContainer,
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(4)),
                     ),
                   ),
                 ],
@@ -413,7 +488,9 @@ class _ReportComparisonCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              _LegendDot(color: AppColors.primary, label: 'Thu nhập: ${_shortAmount(income)}'),
+              _LegendDot(
+                  color: AppColors.primary,
+                  label: 'Thu nhập: ${_shortAmount(income)}'),
               const SizedBox(width: 12),
               _LegendDot(
                   color: AppColors.secondaryContainer,
@@ -423,8 +500,8 @@ class _ReportComparisonCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              bar('Kỳ trước nữa', income * 0.8, expense * 0.9, false),
-              bar('Kỳ liền trước', income * 0.9, expense * 0.95, false),
+              bar('Kỳ trước nữa', 0, 0, false),
+              bar('Kỳ liền trước', 0, 0, false),
               bar('Kỳ hiện tại', income, expense, true),
             ],
           ),
@@ -432,9 +509,15 @@ class _ReportComparisonCard extends StatelessWidget {
           Row(
             children: [
               Text('Chênh lệch thặng dư: ',
-                  style: AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant)),
+                  style: AppTypography.bodySm
+                      .copyWith(color: AppColors.onSurfaceVariant)),
               Text('+${formatCurrency(net)} đ',
-                  style: AppTypography.labelMd.copyWith(color: AppColors.secondary)),
+                  style: AppTypography.labelMd
+                      .copyWith(color: AppColors.secondary)),
+              const Spacer(),
+              Text('Xem chi tiết →',
+                  style:
+                      AppTypography.labelMd.copyWith(color: AppColors.primary)),
             ],
           ),
         ],
@@ -459,16 +542,65 @@ class _LegendDot extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 6),
-        Text(label, style: AppTypography.labelSm.copyWith(color: AppColors.onSurfaceVariant)),
+        Text(label,
+            style: AppTypography.labelSm
+                .copyWith(color: AppColors.onSurfaceVariant)),
       ],
     );
   }
 }
 
+class _ForecastTile extends StatelessWidget {
+  const _ForecastTile({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: child,
+    );
+  }
+}
+
 class _ForecastCard extends StatelessWidget {
-  const _ForecastCard();
+  const _ForecastCard({required this.family});
+
+  final FamilyDetailModel family;
+
+  double get _dailyRate {
+    final day = DateTime.now().day;
+    return family.totalExpense / (day < 1 ? 1 : day);
+  }
+
+  /// Dự đoán số dư cuối kỳ = quỹ còn lại − chi tiêu dự kiến cho các ngày còn lại.
+  double get _forecast {
+    final now = DateTime.now();
+    final daysInMonth = DateTime(now.year, now.month + 1, 0).day;
+    return family.totalBudget - _dailyRate * (daysInMonth - now.day);
+  }
+
+  String get _advice {
+    FinancialCategoryModel? hottest;
+    for (final c in family.categories) {
+      if (hottest == null || c.usageRatio > hottest.usageRatio) hottest = c;
+    }
+    if (hottest == null) {
+      return 'Hãy thêm các hũ chi tiêu cho gia đình để FinNest đưa ra khuyến nghị.';
+    }
+    final percent = (hottest.usageRatio * 100).toStringAsFixed(1);
+    return 'Khuyến nghị từ trợ lý FinNest: hũ "${hottest.name}" đang đạt $percent% định mức. Nên cân đối các khoản chi sắp tới để bảo toàn thặng dư mục tiêu.';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -486,44 +618,65 @@ class _ForecastCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Tốc độ chi tiêu hiện tại',
-                        style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
-                    const SizedBox(height: 4),
-                    Text('970.000 đ/ngày', style: AppTypography.titleSm),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.check_circle, size: 12, color: AppColors.secondary),
-                        const SizedBox(width: 4),
-                        Text('Trong giới hạn an toàn',
-                            style: AppTypography.labelSm.copyWith(color: AppColors.secondary)),
-                      ],
-                    ),
-                  ],
+                child: _ForecastTile(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Tốc độ chi tiêu hiện tại',
+                          style: AppTypography.labelSm
+                              .copyWith(color: AppColors.outline)),
+                      const SizedBox(height: 4),
+                      Text('${formatCurrency(_dailyRate)} đ/ngày',
+                          style: AppTypography.titleSm),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.check_circle,
+                              size: 12, color: AppColors.secondary),
+                          const SizedBox(width: 4),
+                          Text('Tính từ đầu tháng',
+                              style: AppTypography.labelSm
+                                  .copyWith(color: AppColors.secondary)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Dự đoán số dư cuối kỳ',
-                        style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
-                    const SizedBox(height: 4),
-                    Text('+17.850.000 đ',
-                        style: AppTypography.titleSm.copyWith(color: AppColors.secondary)),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.trending_up, size: 12, color: AppColors.secondary),
-                        const SizedBox(width: 4),
-                        Text('Vượt 8.2% kế hoạch',
-                            style: AppTypography.labelSm.copyWith(color: AppColors.secondary)),
-                      ],
-                    ),
-                  ],
+                child: _ForecastTile(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Dự đoán số dư cuối kỳ',
+                          style: AppTypography.labelSm
+                              .copyWith(color: AppColors.outline)),
+                      const SizedBox(height: 4),
+                      Text('${formatCurrency(_forecast)} đ',
+                          style: AppTypography.titleSm.copyWith(
+                              color: _forecast >= 0
+                                  ? AppColors.secondary
+                                  : AppColors.error)),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                              _forecast >= 0
+                                  ? Icons.trending_up
+                                  : Icons.trending_down,
+                              size: 12,
+                              color: _forecast >= 0
+                                  ? AppColors.secondary
+                                  : AppColors.error),
+                          const SizedBox(width: 4),
+                          Text('Nếu giữ nhịp chi hiện tại',
+                              style: AppTypography.labelSm
+                                  .copyWith(color: AppColors.secondary)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -538,12 +691,14 @@ class _ForecastCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.auto_awesome, size: 16, color: AppColors.secondary),
+                const Icon(Icons.auto_awesome,
+                    size: 16, color: AppColors.secondary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Khuyến nghị từ trợ lý FinNest: hũ giáo dục & con cái đang đạt hơn 70% định mức. Nên cân đối các khoản mua sắm sách và thiết bị ngoại khoá sang kỳ tới để bảo toàn thặng dư mục tiêu.',
-                    style: AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant),
+                    _advice,
+                    style: AppTypography.bodySm
+                        .copyWith(color: AppColors.onSurfaceVariant),
                   ),
                 ),
               ],
@@ -551,6 +706,61 @@ class _ForecastCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Hiển thị khi tài khoản chưa thuộc gia đình nào (hoặc đang tải).
+class _EmptyOverview extends StatelessWidget {
+  const _EmptyOverview({required this.loading});
+
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) return const Center(child: CircularProgressIndicator());
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              const Icon(Icons.diversity_3, size: 48, color: AppColors.primary),
+              const SizedBox(height: 12),
+              Text('Bạn chưa có tổ ấm nào', style: AppTypography.headlineSm),
+              const SizedBox(height: 6),
+              Text(
+                'Tạo gia đình mới hoặc nhập mã mời từ Chủ hộ để bắt đầu quản lý tài chính chung.',
+                textAlign: TextAlign.center,
+                style: AppTypography.bodySm
+                    .copyWith(color: AppColors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => promptCreateFamily(context),
+                style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    minimumSize: const Size.fromHeight(48)),
+                icon: const Icon(Icons.add_home_outlined),
+                label: const Text('Tạo gia đình mới'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () => promptJoinFamily(context),
+                style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48)),
+                icon: const Icon(Icons.vpn_key_outlined),
+                label: const Text('Nhập mã mời'),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

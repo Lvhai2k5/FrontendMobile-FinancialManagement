@@ -111,8 +111,7 @@ class CategoryProgressTile extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Đã chi: ${formatCurrency(category.spent)} đ · Định mức: ${formatCurrency(category.limitAmount)} đ',
-              style:
-                  AppTypography.labelSm.copyWith(color: AppColors.outline),
+              style: AppTypography.labelSm.copyWith(color: AppColors.outline),
             ),
           ],
         ),

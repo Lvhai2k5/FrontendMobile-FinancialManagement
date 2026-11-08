@@ -6,21 +6,12 @@ import '../../models/family_model.dart';
 import '../../providers/family_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/format_currency.dart';
+import 'family_actions.dart';
 
 /// Tab "Gia đình" — danh sách các `Family` mà Person hiện tại tham gia, mỗi
 /// dòng dẫn sang màn Chi tiết gia đình. Thiết kế theo `finnest_tab_gia_nh`.
 class FamilyListTab extends StatelessWidget {
   const FamilyListTab({super.key});
-
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature sẽ có ở bản cập nhật tiếp theo.'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.onSurface,
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,105 +20,123 @@ class FamilyListTab extends StatelessWidget {
         families.where((f) => f.myRole == MemberRole.owner).length;
     final memberCount = families.length - ownerCount;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+    return RefreshIndicator(
+        onRefresh: () => context.read<FamilyProvider>().load(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.pastelBlush,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.diversity_3,
-                          color: AppColors.primary),
+                    Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: AppColors.pastelBlush,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.diversity_3,
+                              color: AppColors.primary),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                  'Bạn đang tham gia ${families.length} gia đình',
+                                  style: AppTypography.titleSm),
+                              Text('Đồng bộ ngân sách và kết nối tài chính',
+                                  style: AppTypography.labelSm
+                                      .copyWith(color: AppColors.outline)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Bạn đang tham gia ${families.length} gia đình',
-                              style: AppTypography.titleSm),
-                          Text('Đồng bộ ngân sách và kết nối tài chính',
-                              style: AppTypography.labelSm
-                                  .copyWith(color: AppColors.outline)),
-                        ],
-                      ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                            child: _RoleStat(
+                                count: ownerCount, label: 'Vai trò\nChủ hộ')),
+                        const SizedBox(width: 8),
+                        Expanded(
+                            child: _RoleStat(
+                                count: memberCount,
+                                label: 'Vai trò\nThành viên')),
+                      ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                        child: _RoleStat(count: ownerCount, label: 'Vai trò\nChủ hộ')),
-                    const SizedBox(width: 8),
-                    Expanded(
-                        child:
-                            _RoleStat(count: memberCount, label: 'Vai trò\nThành viên')),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _ActionCard(
-                  icon: Icons.vpn_key_outlined,
-                  title: 'Nhập mã mời',
-                  subtitle: 'Gia nhập gia đình',
-                  onTap: () => _showComingSoon(context, 'Nhập mã mời'),
-                ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _ActionCard(
-                  icon: Icons.add_home_outlined,
-                  title: 'Tạo gia đình mới',
-                  subtitle: 'Bắt đầu quỹ chung',
-                  onTap: () => _showComingSoon(context, 'Tạo gia đình mới'),
-                ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ActionCard(
+                      icon: Icons.vpn_key_outlined,
+                      title: 'Nhập mã mời',
+                      subtitle: 'Gia nhập gia đình',
+                      onTap: () => promptJoinFamily(context),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ActionCard(
+                      icon: Icons.add_home_outlined,
+                      title: 'Tạo gia đình mới',
+                      subtitle: 'Bắt đầu quỹ chung',
+                      onTap: () => promptCreateFamily(context),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Danh sách gia đình', style: AppTypography.headlineSm),
+                  Text('${families.length} gia đình',
+                      style: AppTypography.labelSm
+                          .copyWith(color: AppColors.outline)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              for (final family in families)
+                _FamilyCard(
+                  family: family,
+                  onTap: () => Navigator.of(context).pushNamed(
+                    AppRoutes.familyDetail,
+                    arguments: family.familyId,
+                  ),
+                ),
+              if (families.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Text(
+                        'Bạn chưa tham gia gia đình nào.\nHãy tạo gia đình mới hoặc nhập mã mời.',
+                        textAlign: TextAlign.center,
+                        style: AppTypography.bodyMd
+                            .copyWith(color: AppColors.outline)),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Danh sách gia đình', style: AppTypography.headlineSm),
-              Text('${families.length} gia đình',
-                  style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          for (final family in families)
-            _FamilyCard(
-              family: family,
-              onTap: () => Navigator.of(context).pushNamed(
-                AppRoutes.familyDetail,
-                arguments: family.familyId,
-              ),
-            ),
-        ],
-      ),
-    );
+        ));
   }
 }
 
@@ -151,7 +160,8 @@ class _RoleStat extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(label,
-                style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                style:
+                    AppTypography.labelSm.copyWith(color: AppColors.outline)),
           ),
         ],
       ),
@@ -161,7 +171,10 @@ class _RoleStat extends StatelessWidget {
 
 class _ActionCard extends StatelessWidget {
   const _ActionCard(
-      {required this.icon, required this.title, required this.subtitle, required this.onTap});
+      {required this.icon,
+      required this.title,
+      required this.subtitle,
+      required this.onTap});
 
   final IconData icon;
   final String title;
@@ -186,7 +199,8 @@ class _ActionCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(title, style: AppTypography.titleSm),
             Text(subtitle,
-                style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                style:
+                    AppTypography.labelSm.copyWith(color: AppColors.outline)),
           ],
         ),
       ),
@@ -226,7 +240,8 @@ class _FamilyCard extends StatelessWidget {
                     color: AppColors.pastelBlush,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.home_outlined, color: AppColors.primary),
+                  child:
+                      const Icon(Icons.home_outlined, color: AppColors.primary),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -251,8 +266,8 @@ class _FamilyCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(family.myRole.label,
-                                style: AppTypography.labelSm
-                                    .copyWith(color: AppColors.onSurfaceVariant)),
+                                style: AppTypography.labelSm.copyWith(
+                                    color: AppColors.onSurfaceVariant)),
                           ),
                         ],
                       ),
@@ -310,7 +325,8 @@ class _FamilyCard extends StatelessWidget {
                         style: AppTypography.labelMd
                             .copyWith(color: AppColors.primary)),
                     const SizedBox(width: 4),
-                    Icon(Icons.arrow_forward, size: 14, color: AppColors.primary),
+                    Icon(Icons.arrow_forward,
+                        size: 14, color: AppColors.primary),
                   ],
                 ),
               ],

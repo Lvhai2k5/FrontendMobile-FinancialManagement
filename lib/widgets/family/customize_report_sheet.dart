@@ -66,8 +66,9 @@ class _CustomizeReportSheetState extends State<CustomizeReportSheet> {
                     onSelected: (_) => setState(() => _memberIndex = i),
                     selectedColor: AppColors.primaryContainer,
                     labelStyle: AppTypography.labelMd.copyWith(
-                        color:
-                            selected ? Colors.white : AppColors.onSurfaceVariant),
+                        color: selected
+                            ? Colors.white
+                            : AppColors.onSurfaceVariant),
                     backgroundColor: AppColors.surfaceContainerLow,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999)),
@@ -76,8 +77,9 @@ class _CustomizeReportSheetState extends State<CustomizeReportSheet> {
                 }),
               ),
               const SizedBox(height: 20),
-              Text('Loại biểu đồ báo cáo', style: AppTypography.labelMd
-                  .copyWith(color: AppColors.onSurfaceVariant)),
+              Text('Loại biểu đồ báo cáo',
+                  style: AppTypography.labelMd
+                      .copyWith(color: AppColors.onSurfaceVariant)),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -164,14 +166,16 @@ class _ChartOptionCard extends StatelessWidget {
                   child: Icon(icon, size: 16, color: AppColors.primary),
                 ),
                 if (selected)
-                  const Icon(Icons.check_circle, size: 18, color: AppColors.primary),
+                  const Icon(Icons.check_circle,
+                      size: 18, color: AppColors.primary),
               ],
             ),
             const SizedBox(height: 8),
             Text(title, style: AppTypography.titleSm),
             const SizedBox(height: 4),
             Text(subtitle,
-                style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                style:
+                    AppTypography.labelSm.copyWith(color: AppColors.outline)),
           ],
         ),
       ),

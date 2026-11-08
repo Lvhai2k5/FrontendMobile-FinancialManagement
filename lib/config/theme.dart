@@ -18,7 +18,11 @@ class AppColors {
   static const Color error = Color(0xFFBA1A1A);
 
   static const Color primary = Color(0xFF95473B);
-  static const Color primaryContainer = Color(0xFFE08374);
+
+  /// Theo các màn `screen0`…`screen8`, nút CTA/chip chọn/nav đang chọn đều
+  /// dùng nâu đỏ đậm (cùng tông `primary`) chứ không phải san hô nhạt.
+  static const Color primaryContainer = Color(0xFF95473B);
+  static const Color primaryDark = Color(0xFF7A3329);
   static const Color secondary = Color(0xFF55615B);
   static const Color secondaryContainer = Color(0xFFD8E6DD);
 
@@ -29,7 +33,7 @@ class AppColors {
 
   /// Nút CTA "hero" riêng cho màn hình Welcome (đậm hơn `primaryContainer`
   /// theo đúng override thật trong `code.html` của màn đó).
-  static const Color ctaPrimary = Color(0xFFE5897A);
+  static const Color ctaPrimary = Color(0xFF95473B);
   static const Color ctaSecondaryBorder = Color(0xFFF3D7D0);
 }
 

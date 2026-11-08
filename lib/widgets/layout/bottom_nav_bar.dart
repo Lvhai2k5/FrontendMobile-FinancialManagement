@@ -34,7 +34,7 @@ class BottomNavBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 64,
+          height: 72,
           child: Row(
             children: List.generate(items.length, (index) {
               final selected = index == currentIndex;
@@ -42,36 +42,37 @@ class BottomNavBar extends StatelessWidget {
               return Expanded(
                 child: InkWell(
                   onTap: () => onTap(index),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? AppColors.primary
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Icon(
-                          item.icon,
-                          size: 22,
-                          color: selected
-                              ? Colors.white
-                              : AppColors.onSurfaceVariant,
-                        ),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color:
+                            selected ? AppColors.primary : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: AppTypography.labelSm.copyWith(
-                          color: selected
-                              ? AppColors.primary
-                              : AppColors.onSurfaceVariant,
-                        ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            item.icon,
+                            size: 22,
+                            color: selected
+                                ? Colors.white
+                                : AppColors.onSurfaceVariant,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.label,
+                            style: AppTypography.labelSm.copyWith(
+                              color: selected
+                                  ? Colors.white
+                                  : AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               );

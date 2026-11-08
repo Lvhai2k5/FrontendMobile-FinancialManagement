@@ -6,6 +6,7 @@ import '../../models/family_model.dart';
 import '../../providers/family_provider.dart';
 import '../../utils/format_currency.dart';
 import '../../widgets/common/app_button.dart';
+import '../../widgets/common/text_input_dialog.dart';
 
 class ThresholdConfigArgs {
   const ThresholdConfigArgs({
@@ -86,15 +87,16 @@ class ThresholdConfigScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(999),
                             ),
                             child: Text(args.myRole.label,
-                                style: AppTypography.labelSm
-                                    .copyWith(color: AppColors.onSurfaceVariant)),
+                                style: AppTypography.labelSm.copyWith(
+                                    color: AppColors.onSurfaceVariant)),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Thiết lập 3 ngưỡng kiểm soát tài chính cho hũ "${args.categoryName}".',
-                        style: AppTypography.labelSm.copyWith(color: AppColors.outline),
+                        style: AppTypography.labelSm
+                            .copyWith(color: AppColors.outline),
                       ),
                     ],
                   ),
@@ -114,9 +116,11 @@ class ThresholdConfigScreen extends StatelessWidget {
             footnote: 'Áp dụng cho mọi thành viên trong nhà',
             editable: isOwner,
             onToggle: (v) => provider.updateThreshold(
-                args.categoryId, ThresholdType.approve, enabled: v),
+                args.categoryId, ThresholdType.approve,
+                enabled: v),
             onAmountChanged: (v) => provider.updateThreshold(
-                args.categoryId, ThresholdType.approve, amount: v),
+                args.categoryId, ThresholdType.approve,
+                amount: v),
           ),
           const SizedBox(height: 16),
           _ThresholdCard(
@@ -129,9 +133,11 @@ class ThresholdConfigScreen extends StatelessWidget {
             quickAmounts: const [5000000, 10000000, 15000000, 20000000],
             editable: isOwner,
             onToggle: (v) => provider.updateThreshold(
-                args.categoryId, ThresholdType.warning, enabled: v),
+                args.categoryId, ThresholdType.warning,
+                enabled: v),
             onAmountChanged: (v) => provider.updateThreshold(
-                args.categoryId, ThresholdType.warning, amount: v),
+                args.categoryId, ThresholdType.warning,
+                amount: v),
           ),
           const SizedBox(height: 16),
           _ThresholdCard(
@@ -144,9 +150,11 @@ class ThresholdConfigScreen extends StatelessWidget {
             quickAmounts: const [1000000, 2000000, 3000000, 5000000],
             editable: isOwner,
             onToggle: (v) => provider.updateThreshold(
-                args.categoryId, ThresholdType.emergency, enabled: v),
+                args.categoryId, ThresholdType.emergency,
+                enabled: v),
             onAmountChanged: (v) => provider.updateThreshold(
-                args.categoryId, ThresholdType.emergency, amount: v),
+                args.categoryId, ThresholdType.emergency,
+                amount: v),
           ),
           const SizedBox(height: 16),
           Container(
@@ -177,15 +185,20 @@ class ThresholdConfigScreen extends StatelessWidget {
             leadingIcon: Icons.check,
             backgroundColor: AppColors.primaryContainer,
             onPressed: isOwner
-                ? () {
+                ? () async {
+                    final error =
+                        await provider.saveThresholds(args.categoryId);
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Đã lưu cấu hình hạn mức.'),
+                      SnackBar(
+                        content: Text(error ?? 'Đã lưu cấu hình hạn mức.'),
                         behavior: SnackBarBehavior.floating,
-                        backgroundColor: AppColors.secondary,
+                        backgroundColor: error == null
+                            ? AppColors.secondary
+                            : AppColors.error,
                       ),
                     );
-                    Navigator.of(context).maybePop();
+                    if (error == null) Navigator.of(context).maybePop();
                   }
                 : () {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -260,7 +273,8 @@ class _ThresholdCard extends StatelessWidget {
                     Text(title, style: AppTypography.titleSm),
                     const SizedBox(height: 2),
                     Text(description,
-                        style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                        style: AppTypography.labelSm
+                            .copyWith(color: AppColors.outline)),
                   ],
                 ),
               ),
@@ -275,24 +289,50 @@ class _ThresholdCard extends StatelessWidget {
           if (enabled) ...[
             const SizedBox(height: 12),
             Text(amountLabel,
-                style: AppTypography.labelMd.copyWith(color: AppColors.onSurfaceVariant)),
+                style: AppTypography.labelMd
+                    .copyWith(color: AppColors.onSurfaceVariant)),
             const SizedBox(height: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceContainerLow,
+            InkWell(
                 borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Text('đ', style: AppTypography.titleSm.copyWith(color: AppColors.primary)),
-                  const SizedBox(width: 8),
-                  Text(formatCurrency(threshold.amount), style: AppTypography.titleSm),
-                  const Spacer(),
-                  Text('VNĐ', style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
-                ],
-              ),
-            ),
+                onTap: editable
+                    ? () async {
+                        final value = await showTextInputDialog(
+                          context,
+                          title: amountLabel,
+                          hint: 'Nhập số tiền (đ)',
+                          keyboardType: TextInputType.number,
+                          initialValue: threshold.amount.round().toString(),
+                        );
+                        final parsed = double.tryParse((value ?? '')
+                            .replaceAll('.', '')
+                            .replaceAll(',', ''));
+                        if (parsed != null && parsed >= 0) {
+                          onAmountChanged(parsed);
+                        }
+                      }
+                    : null,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Text('đ',
+                          style: AppTypography.titleSm
+                              .copyWith(color: AppColors.primary)),
+                      const SizedBox(width: 8),
+                      Text(formatCurrency(threshold.amount),
+                          style: AppTypography.titleSm),
+                      const Spacer(),
+                      Text('VNĐ',
+                          style: AppTypography.labelSm
+                              .copyWith(color: AppColors.outline)),
+                    ],
+                  ),
+                )),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -302,8 +342,8 @@ class _ThresholdCard extends StatelessWidget {
                   GestureDetector(
                     onTap: editable ? () => onAmountChanged(amount) : null,
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: threshold.amount == amount
                             ? AppColors.primaryContainer
@@ -323,10 +363,12 @@ class _ThresholdCard extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.groups_outlined, size: 14, color: AppColors.outline),
+                  Icon(Icons.groups_outlined,
+                      size: 14, color: AppColors.outline),
                   const SizedBox(width: 4),
                   Text(footnote!,
-                      style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                      style: AppTypography.labelSm
+                          .copyWith(color: AppColors.outline)),
                 ],
               ),
             ],
@@ -337,7 +379,8 @@ class _ThresholdCard extends StatelessWidget {
                 Icon(Icons.info_outline, size: 14, color: AppColors.outline),
                 const SizedBox(width: 4),
                 Text('Đã tắt — bật công tắc để chỉnh sửa',
-                    style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.outline)),
               ],
             ),
           ],

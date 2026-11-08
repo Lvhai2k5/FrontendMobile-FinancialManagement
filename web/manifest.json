@@ -1,6 +1,6 @@
 {
-    "name": "finance_management",
-    "short_name": "finance_management",
+    "name": "FinNest",
+    "short_name": "FinNest",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

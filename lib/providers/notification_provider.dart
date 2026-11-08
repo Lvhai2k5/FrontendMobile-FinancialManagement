@@ -1,52 +1,59 @@
 import 'package:flutter/foundation.dart';
 
+import '../api/notification_api.dart';
+import '../api/transaction_api.dart';
 import '../models/notification_model.dart';
+import '../utils/api_error.dart';
 
-/// Logic + state cho danh sách thông báo. Backend chưa có endpoint
-/// `/notifications` nên seed mock tại đây — xem ghi chú ở
-/// `family_provider.dart`.
+/// Thông báo (giao dịch cần duyệt, cảnh báo hạn mức) lấy từ Backend.
 class NotificationProvider with ChangeNotifier {
-  NotificationProvider() {
-    _seed();
-  }
+  NotificationProvider({NotificationApi? api, TransactionApi? transactionApi})
+      : _api = api ?? NotificationApi(),
+        _transactionApi = transactionApi ?? TransactionApi();
 
+  final NotificationApi _api;
+  final TransactionApi _transactionApi;
   final List<NotificationModel> _notifications = [];
+
+  bool loading = false;
 
   List<NotificationModel> get notifications =>
       List.unmodifiable(_notifications);
 
-  void respondToApproval(int id, {required bool approved}) {
-    _notifications.removeWhere((n) => n.id == id);
+  Future<void> load() async {
+    loading = true;
     notifyListeners();
+    try {
+      final items = await _api.list();
+      _notifications
+        ..clear()
+        ..addAll(items);
+    } catch (_) {
+      // Giữ danh sách cũ; thông báo không quan trọng bằng chặn UI.
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
   }
 
-  void _seed() {
-    _notifications.addAll(const [
-      NotificationModel(
-        id: 1,
-        kind: NotificationKind.approvalRequest,
-        title: 'Giao dịch cần duyệt',
-        message:
-            'Nguyên vừa tạo giao dịch "Đồ chơi Lego" -450.000 đ, vượt hạn mức cần chấp thuận.',
-        timeLabel: '10 phút trước',
-        actionable: true,
-      ),
-      NotificationModel(
-        id: 2,
-        kind: NotificationKind.thresholdWarning,
-        title: 'Cảnh báo hạn mức hũ',
-        message:
-            'Hũ nhu cầu thiết yếu đã đạt 81.2% định mức tháng này. Hãy cân nhắc các khoản chi sắp tới.',
-        timeLabel: '2 giờ trước',
-      ),
-      NotificationModel(
-        id: 3,
-        kind: NotificationKind.syncSuccess,
-        title: 'Đã đồng bộ giao dịch',
-        message:
-            'Giao dịch Tiền điện nước 1.200.000 đ đã được Lan ghi nhận thành công vào Hũ thiết yếu.',
-        timeLabel: 'Hôm qua',
-      ),
-    ]);
+  /// Chủ hộ duyệt/từ chối giao dịch từ thông báo (`id` = transactionId).
+  /// Trả `null` nếu thành công, ngược lại là message lỗi.
+  Future<String?> respondToApproval(int id, {required bool approved}) async {
+    try {
+      if (approved) {
+        await _transactionApi.approve(id);
+      } else {
+        await _transactionApi.reject(id);
+      }
+      await load();
+      return null;
+    } catch (e) {
+      return apiErrorMessage(e);
+    }
+  }
+
+  void clear() {
+    _notifications.clear();
+    notifyListeners();
   }
 }

@@ -6,6 +6,7 @@ import 'providers/auth_provider.dart';
 import 'providers/family_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/transaction_provider.dart';
+import 'providers/user_provider.dart';
 import 'routes/app_routes.dart';
 
 class FinanceManagementApp extends StatelessWidget {
@@ -19,11 +20,13 @@ class FinanceManagementApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FamilyProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
       child: MaterialApp(
         title: 'FinNest',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
+        navigatorKey: AppRoutes.navigatorKey,
         initialRoute: AppRoutes.welcome,
         onGenerateRoute: AppRoutes.onGenerateRoute,
       ),

@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/family_provider.dart';
+import '../../providers/notification_provider.dart';
+import '../../providers/transaction_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../widgets/layout/bottom_nav_bar.dart';
 import '../../widgets/layout/home_app_bar.dart';
 import '../family/family_list_tab.dart';
@@ -19,6 +24,22 @@ class HomeShellScreen extends StatefulWidget {
 
 class _HomeShellScreenState extends State<HomeShellScreen> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Vào app là tải dữ liệu thật của tài khoản đang đăng nhập từ Backend.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reloadAll());
+  }
+
+  Future<void> _reloadAll() async {
+    await Future.wait([
+      context.read<UserProvider>().load(),
+      context.read<FamilyProvider>().load(),
+      context.read<TransactionProvider>().load(),
+      context.read<NotificationProvider>().load(),
+    ]);
+  }
 
   static const _items = [
     BottomNavItemData(icon: Icons.grid_view_rounded, label: 'Tổng quan'),
