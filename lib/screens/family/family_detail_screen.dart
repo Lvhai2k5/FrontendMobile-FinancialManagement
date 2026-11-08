@@ -9,6 +9,7 @@ import '../../providers/transaction_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/format_currency.dart';
 import '../../widgets/family/category_progress_tile.dart';
+import 'family_actions.dart';
 import 'threshold_config_screen.dart';
 
 /// Chi tiết 1 `Family`: thành viên (`Relationship`), danh mục tài chính
@@ -32,8 +33,23 @@ class FamilyDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final family = context.watch<FamilyProvider>().detail(familyId);
-    final transactions =
-        context.watch<TransactionProvider>().transactions.take(5).toList();
+    final transactions = context
+        .watch<TransactionProvider>()
+        .forFamily(familyId)
+        .take(5)
+        .toList();
+
+    if (family == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          title: const Text('Chi tiết gia đình'),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -63,22 +79,26 @@ class FamilyDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerLowest,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text('Bạn là ${family.myRole.label.toLowerCase()}',
-                      style: AppTypography.labelSm.copyWith(color: AppColors.primary)),
+                      style: AppTypography.labelSm
+                          .copyWith(color: AppColors.primary)),
                 ),
                 const SizedBox(height: 8),
                 Text(family.name, style: AppTypography.headlineLgMobile),
                 const SizedBox(height: 2),
                 Text(family.code,
-                    style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.outline)),
                 const SizedBox(height: 12),
                 Text('TỔNG QUỸ CHUNG KHẢ DỤNG',
-                    style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.outline)),
                 Row(
                   children: [
                     Text('${formatCurrency(family.totalBudget)} đ',
@@ -86,13 +106,15 @@ class FamilyDetailScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     if (family.budgetGrowthPercent > 0)
                       Text('+${family.budgetGrowthPercent}%',
-                          style: AppTypography.labelMd.copyWith(color: AppColors.secondary)),
+                          style: AppTypography.labelMd
+                              .copyWith(color: AppColors.secondary)),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                     '${family.members.length} thành viên  ·  ${family.foundedLabel}',
-                    style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.outline)),
                 const SizedBox(height: 14),
                 Row(
                   children: [
@@ -101,8 +123,9 @@ class FamilyDetailScreen extends StatelessWidget {
                         icon: Icons.add_circle,
                         label: 'Thêm giao dịch',
                         filled: true,
-                        onTap: () => Navigator.of(context)
-                            .pushNamed(AppRoutes.transactionForm),
+                        onTap: () => Navigator.of(context).pushNamed(
+                            AppRoutes.transactionForm,
+                            arguments: familyId),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -110,7 +133,11 @@ class FamilyDetailScreen extends StatelessWidget {
                       child: _QuickAction(
                         icon: Icons.account_tree_outlined,
                         label: 'Thêm danh mục',
-                        onTap: () => _showComingSoon(context, 'Thêm danh mục'),
+                        onTap: () => family.myRole == MemberRole.owner
+                            ? promptCreateCategory(context, familyId)
+                            : showSnack(
+                                context, 'Chỉ Chủ hộ mới được thêm danh mục.',
+                                error: true),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -118,7 +145,7 @@ class FamilyDetailScreen extends StatelessWidget {
                       child: _QuickAction(
                         icon: Icons.person_add_alt,
                         label: 'Mời thêm',
-                        onTap: () => _showComingSoon(context, 'Mời thêm thành viên'),
+                        onTap: () => showInviteCode(context, family.code),
                       ),
                     ),
                   ],
@@ -146,10 +173,11 @@ class FamilyDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                            child: Text(member.name, style: AppTypography.bodyMd)),
+                            child:
+                                Text(member.name, style: AppTypography.bodyMd)),
                         Container(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceContainerLow,
                             borderRadius: BorderRadius.circular(999),
@@ -200,8 +228,8 @@ class FamilyDetailScreen extends StatelessWidget {
                     onPressed: () => Navigator.of(context)
                         .pushNamedAndRemoveUntil(AppRoutes.home, (r) => false),
                     child: Text('Xem toàn bộ giao dịch tháng này →',
-                        style:
-                            AppTypography.labelMd.copyWith(color: AppColors.primary)),
+                        style: AppTypography.labelMd
+                            .copyWith(color: AppColors.primary)),
                   ),
                 ),
               ],
@@ -215,7 +243,10 @@ class FamilyDetailScreen extends StatelessWidget {
 
 class _QuickAction extends StatelessWidget {
   const _QuickAction(
-      {required this.icon, required this.label, required this.onTap, this.filled = false});
+      {required this.icon,
+      required this.label,
+      required this.onTap,
+      this.filled = false});
 
   final IconData icon;
   final String label;
@@ -235,12 +266,13 @@ class _QuickAction extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icon, size: 18, color: filled ? Colors.white : AppColors.primary),
+            Icon(icon,
+                size: 18, color: filled ? Colors.white : AppColors.primary),
             const SizedBox(height: 4),
             Text(label,
                 textAlign: TextAlign.center,
-                style: AppTypography.labelSm
-                    .copyWith(color: filled ? Colors.white : AppColors.onSurfaceVariant)),
+                style: AppTypography.labelSm.copyWith(
+                    color: filled ? Colors.white : AppColors.onSurfaceVariant)),
           ],
         ),
       ),
@@ -249,7 +281,8 @@ class _QuickAction extends StatelessWidget {
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.icon, required this.title, required this.child});
+  const _SectionCard(
+      {required this.icon, required this.title, required this.child});
 
   final IconData icon;
   final String title;
@@ -313,7 +346,8 @@ class _TransactionRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(transaction.status.label,
-                style: AppTypography.labelSm.copyWith(color: AppColors.onSurfaceVariant)),
+                style: AppTypography.labelSm
+                    .copyWith(color: AppColors.onSurfaceVariant)),
           ),
         ],
       ),

@@ -1,3 +1,5 @@
+import '../utils/api_error.dart';
+
 /// Loại giao dịch — khớp `TransactionType`, xem `BUSINESS-REQUIREMENTS.md`
 /// mục 5.
 enum TransactionType { income, expense }
@@ -25,6 +27,8 @@ class TransactionModel {
     required this.status,
     required this.categoryName,
     required this.createdAt,
+    this.familyId,
+    this.financialCategoryId,
   });
 
   final int transactionId;
@@ -34,4 +38,29 @@ class TransactionModel {
   final TransactionStatus status;
   final String categoryName;
   final DateTime createdAt;
+  final int? familyId;
+  final int? financialCategoryId;
+
+  /// Backend trả 	ype = INCOME/EXPENSE, status = DRAFT/PENDING/REVIEW/
+  /// APPROVED/REJECTED/OFFLINE; Mobile gộp mọi trạng thái chưa quyết định
+  /// thành pend.
+  factory TransactionModel.fromJson(Map<String, dynamic> json) =>
+      TransactionModel(
+        transactionId: asInt(json['transactionId']),
+        content: json['content'] as String? ?? '',
+        amount: asDouble(json['amount']),
+        type: json['type'] == 'INCOME'
+            ? TransactionType.income
+            : TransactionType.expense,
+        status: switch (json['status']) {
+          'APPROVED' => TransactionStatus.approve,
+          'REJECTED' => TransactionStatus.reject,
+          _ => TransactionStatus.pend,
+        },
+        categoryName: json['categoryName'] as String? ?? '',
+        createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+            DateTime.now(),
+        familyId: (json['familyId'] as num?)?.toInt(),
+        financialCategoryId: (json['financialCategoryId'] as num?)?.toInt(),
+      );
 }

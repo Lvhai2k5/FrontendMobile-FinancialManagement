@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/common/brand_wordmark.dart';
 
 /// Màn hình đăng nhập — screen chỉ điều phối: giữ input UI (controller,
 /// ẩn/hiện mật khẩu), gọi `AuthProvider` khi submit, không tự gọi `api/`.
@@ -85,18 +86,14 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _Header(onBack: () => Navigator.of(context).maybePop()),
-              const SizedBox(height: 24),
-              Text(
-                'Chào mừng trở lại! 👋',
-                textAlign: TextAlign.center,
-                style: AppTypography.headlineLgMobile,
-              ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 56),
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                      color: AppColors.pastelBlush.withValues(alpha: 0.5)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.04),
@@ -157,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     _DividerWithLabel(label: 'Hoặc đăng nhập nhanh'),
                     const SizedBox(height: 24),
                     AppButton(
-                      label: 'Google',
+                      label: 'Tiếp tục với Google',
                       variant: AppButtonVariant.secondary,
                       leadingWidget: const _GoogleMark(),
                       onPressed: () => _showComingSoon('Đăng nhập Google'),
@@ -230,23 +227,7 @@ class _Header extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/images/logo.jpg',
-                    width: 32,
-                    height: 32,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'FinNest',
-                  style: AppTypography.headlineSm.copyWith(
-                    color: AppColors.secondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                const BrandWordmark(logoSize: 36, fontSize: 26),
               ],
             ),
           ),

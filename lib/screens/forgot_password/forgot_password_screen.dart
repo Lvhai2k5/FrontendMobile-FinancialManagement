@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
@@ -26,7 +28,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  void _handleSend() {
+  Future<void> _handleSend() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -38,11 +40,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       );
       return;
     }
+    final error =
+        await context.read<AuthProvider>().forgotPassword(email: email);
+    if (!mounted) return;
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
     setState(() => _sent = true);
     Navigator.of(context).pushNamed(
       AppRoutes.otpVerify,
-      arguments:
-          OtpVerifyArgs(email: email, purpose: OtpPurpose.resetPassword),
+      arguments: OtpVerifyArgs(email: email, purpose: OtpPurpose.resetPassword),
     );
   }
 

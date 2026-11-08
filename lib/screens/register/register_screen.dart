@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/password_strength_meter.dart';
+import '../../widgets/common/terms_sheet.dart';
 import '../otp/otp_verify_screen.dart';
 
 /// Màn hình đăng ký. Backend chưa có endpoint `/auth/register` (không có
@@ -23,6 +26,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
 
@@ -35,8 +39,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     _passwordController.addListener(() {
-      setState(() =>
-          _strength = evaluatePasswordStrength(_passwordController.text));
+      setState(
+          () => _strength = evaluatePasswordStrength(_passwordController.text));
     });
   }
 
@@ -45,6 +49,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -60,10 +65,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final phone = _phoneController.text.trim();
+    final username = _usernameController.text.trim();
     final password = _passwordController.text;
     final confirm = _confirmController.text;
 
@@ -84,6 +90,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (!RegExp(r'^[A-Za-z0-9._]{3,30}$').hasMatch(username)) {
+      _showError(
+          'Tên tài khoản gồm 3–30 ký tự chữ, số, dấu chấm hoặc gạch dưới (không dấu, không khoảng trắng).');
+      return;
+    }
+
+    final error = await context.read<AuthProvider>().register(
+          name: name,
+          username: username,
+          email: email,
+          phone: phone,
+          password: password,
+        );
+    if (!mounted) return;
+    if (error != null) {
+      _showError(error);
+      return;
+    }
     Navigator.of(context).pushNamed(
       AppRoutes.otpVerify,
       arguments: OtpVerifyArgs(email: email, purpose: OtpPurpose.register),
@@ -151,6 +175,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                     const SizedBox(height: 16),
                     AppTextField(
+                      label: 'Tên tài khoản',
+                      controller: _usernameController,
+                      hintText: 'Nhập tên tài khoản',
+                      prefixIcon: Icons.alternate_email,
+                      autofillHints: const [AutofillHints.newUsername],
+                    ),
+                    const SizedBox(height: 16),
+                    AppTextField(
                       label: 'Mật khẩu',
                       controller: _passwordController,
                       hintText: '••••••••',
@@ -175,8 +207,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(height: 16),
                     _TermsCheckbox(
                       value: _agreeTerms,
-                      onChanged: (value) =>
-                          setState(() => _agreeTerms = value),
+                      onChanged: (value) => setState(() => _agreeTerms = value),
                     ),
                     const SizedBox(height: 16),
                     AppButton(
@@ -256,8 +287,7 @@ class _Header extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text('FinNest',
                     style: AppTypography.headlineSm.copyWith(
-                        color: AppColors.secondary,
-                        fontWeight: FontWeight.w600)),
+                        color: AppColors.primary, fontWeight: FontWeight.w700)),
               ],
             ),
           ),
@@ -277,7 +307,14 @@ class _TermsCheckbox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => onChanged(!value),
+      onTap: () async {
+        if (value) {
+          onChanged(false);
+          return;
+        }
+        final agreed = await showTermsSheet(context);
+        if (agreed == true) onChanged(true);
+      },
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -306,15 +343,13 @@ class _TermsCheckbox extends StatelessWidget {
                   TextSpan(
                     text: 'Điều khoản dịch vụ',
                     style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600),
+                        color: AppColors.primary, fontWeight: FontWeight.w600),
                   ),
                   const TextSpan(text: ' & '),
                   TextSpan(
                     text: 'Chính sách',
                     style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600),
+                        color: AppColors.primary, fontWeight: FontWeight.w600),
                   ),
                   const TextSpan(text: ' của FinNest'),
                 ],

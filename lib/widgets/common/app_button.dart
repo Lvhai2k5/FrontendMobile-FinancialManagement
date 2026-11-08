@@ -72,10 +72,13 @@ class AppButton extends StatelessWidget {
             ? AppColors.primaryContainer
             : Colors.white.withValues(alpha: 0.8));
 
+    final useGradient = _isPrimary && backgroundColor == null ||
+        _isPrimary && backgroundColor == AppColors.primaryContainer;
+
     return SizedBox(
       width: double.infinity,
       child: Material(
-        color: resolvedBackground,
+        color: useGradient ? Colors.transparent : resolvedBackground,
         borderRadius: BorderRadius.circular(999),
         shadowColor: _isPrimary
             ? resolvedBackground.withValues(alpha: 0.35)
@@ -90,7 +93,14 @@ class AppButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 24),
             alignment: Alignment.center,
             decoration: _isPrimary
-                ? null
+                ? (useGradient
+                    ? BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primary, AppColors.primaryDark],
+                        ),
+                      )
+                    : null)
                 : BoxDecoration(
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(color: AppColors.ctaSecondaryBorder),

@@ -9,13 +9,8 @@ class AppConstants {
 
   /// Message lỗi mặc định khi không đọc được lỗi cụ thể từ Backend.
   static const String genericErrorMessage = 'Có lỗi xảy ra, vui lòng thử lại.';
+  static const String networkErrorMessage =
+      'Không kết nối được máy chủ, vui lòng kiểm tra mạng và thử lại.';
   static const String invalidCredentialsMessage =
       'Tên tài khoản hoặc mật khẩu không đúng.';
-
-  /// Tài khoản demo dùng để xem trước toàn bộ app khi Backend chưa sẵn sàng —
-  /// `AuthProvider.login()` nhận diện đúng cặp này thì bỏ qua gọi API thật.
-  /// Xoá hằng số này (và nhánh xử lý tương ứng) khi Backend đã có endpoint
-  /// `/auth/login` thật để test.
-  static const String demoUsername = 'admin';
-  static const String demoPassword = 'Levuhai2@5';
 }

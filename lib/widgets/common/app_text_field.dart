@@ -38,12 +38,14 @@ class AppTextField extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: AppColors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
+            border:
+                Border.all(color: AppColors.pastelBlush.withValues(alpha: 0.6)),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Row(
             children: [
-              Icon(prefixIcon, size: 20, color: AppColors.outline),
+              Icon(prefixIcon, size: 20, color: AppColors.primary),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(

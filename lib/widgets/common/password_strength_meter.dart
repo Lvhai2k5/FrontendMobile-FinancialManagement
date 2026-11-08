@@ -76,11 +76,10 @@ class PasswordStrengthMeter extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Tối thiểu 8 ký tự, gồm chữ và số',
-                  style: AppTypography.labelSm
-                      .copyWith(color: AppColors.outline)),
-              Text('Độ mạnh: $_label',
                   style:
-                      AppTypography.labelSm.copyWith(color: _color)),
+                      AppTypography.labelSm.copyWith(color: AppColors.outline)),
+              Text('Độ mạnh: $_label',
+                  style: AppTypography.labelSm.copyWith(color: _color)),
             ],
           ),
         ],

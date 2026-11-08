@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/notification_provider.dart';
 import '../../routes/app_routes.dart';
+import '../common/brand_wordmark.dart';
 
 /// Thanh app bar dùng chung cho 4 tab chính: logo + tên thương hiệu bên
 /// trái, chuông thông báo bên phải (điều hướng sang màn Thông báo).
@@ -21,15 +22,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset('assets/images/logo.jpg',
-                  width: 28, height: 28, fit: BoxFit.cover),
-            ),
-            const SizedBox(width: 8),
-            Text('FinNest',
-                style: AppTypography.headlineSm
-                    .copyWith(color: AppColors.secondary)),
+            const BrandWordmark(logoSize: 32, fontSize: 22),
             const Spacer(),
             Material(
               color: AppColors.surfaceContainerLowest,

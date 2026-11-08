@@ -5,6 +5,9 @@ import '../../config/theme.dart';
 import '../../models/family_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/family_provider.dart';
+import '../../providers/notification_provider.dart';
+import '../../providers/transaction_provider.dart';
+import '../../providers/user_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/app_button.dart';
 
@@ -24,7 +27,15 @@ class ProfileTab extends StatelessWidget {
   }
 
   Future<void> _handleLogout(BuildContext context) async {
+    final family = context.read<FamilyProvider>();
+    final transactions = context.read<TransactionProvider>();
+    final notifications = context.read<NotificationProvider>();
+    final user = context.read<UserProvider>();
     await context.read<AuthProvider>().logout();
+    family.clear();
+    transactions.clear();
+    notifications.clear();
+    user.clear();
     if (!context.mounted) return;
     Navigator.of(context)
         .pushNamedAndRemoveUntil(AppRoutes.welcome, (route) => false);
@@ -33,6 +44,8 @@ class ProfileTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final families = context.watch<FamilyProvider>().families;
+    final user = context.watch<UserProvider>().user;
+    final displayName = user?.name ?? '...';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -52,7 +65,14 @@ class ProfileTab extends StatelessWidget {
                     CircleAvatar(
                       radius: 44,
                       backgroundColor: AppColors.pastelLavender,
-                      child: Text('M',
+                      child: Text(
+                          displayName.isEmpty
+                              ? '?'
+                              : displayName
+                                  .trim()
+                                  .split(RegExp(r'\s+'))
+                                  .last[0]
+                                  .toUpperCase(),
                           style: AppTypography.headlineLgMobile
                               .copyWith(color: AppColors.onSurface)),
                     ),
@@ -64,7 +84,8 @@ class ProfileTab extends StatelessWidget {
                         shape: const CircleBorder(),
                         child: InkWell(
                           customBorder: const CircleBorder(),
-                          onTap: () => _showComingSoon(context, 'Đổi ảnh đại diện'),
+                          onTap: () =>
+                              _showComingSoon(context, 'Đổi ảnh đại diện'),
                           child: const Padding(
                             padding: EdgeInsets.all(6),
                             child: Icon(Icons.camera_alt,
@@ -76,7 +97,7 @@ class ProfileTab extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Text('Nguyễn Văn Minh', style: AppTypography.headlineSm),
+                Text(displayName, style: AppTypography.headlineSm),
                 const SizedBox(height: 16),
                 Container(
                   width: double.infinity,
@@ -90,12 +111,14 @@ class ProfileTab extends StatelessWidget {
                       _InfoRow(
                           icon: Icons.smartphone,
                           label: 'Số điện thoại',
-                          value: '0912 345 678'),
+                          value: (user?.phone.isNotEmpty ?? false)
+                              ? user!.phone
+                              : 'Chưa cập nhật'),
                       const SizedBox(height: 8),
                       _InfoRow(
                           icon: Icons.mail_outline,
                           label: 'Email',
-                          value: 'minh.nguyen@email.com'),
+                          value: user?.email ?? '...'),
                     ],
                   ),
                 ),
@@ -105,7 +128,7 @@ class ProfileTab extends StatelessWidget {
                   leadingIcon: Icons.edit_outlined,
                   variant: AppButtonVariant.secondary,
                   onPressed: () =>
-                      _showComingSoon(context, 'Chỉnh sửa thông tin cá nhân'),
+                      Navigator.of(context).pushNamed(AppRoutes.editProfile),
                 ),
               ],
             ),
@@ -131,13 +154,16 @@ class ProfileTab extends StatelessWidget {
                         color: AppColors.pastelBlush,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Icon(Icons.diversity_3, color: AppColors.primary),
+                      child: const Icon(Icons.diversity_3,
+                          color: AppColors.primary),
                     ),
                     title: Text(families[i].name, style: AppTypography.titleSm),
                     subtitle: Text(
                         'Vai trò: ${families[i].myRole.label} · ${families[i].memberCount} thành viên',
-                        style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
-                    trailing: Icon(Icons.chevron_right, color: AppColors.outline),
+                        style: AppTypography.labelSm
+                            .copyWith(color: AppColors.outline)),
+                    trailing:
+                        Icon(Icons.chevron_right, color: AppColors.outline),
                     onTap: () => Navigator.of(context).pushNamed(
                         AppRoutes.familyDetail,
                         arguments: families[i].familyId),
@@ -156,21 +182,46 @@ class ProfileTab extends StatelessWidget {
               color: AppColors.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: ListTile(
-              leading: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(10),
+            child: Column(
+              children: [
+                _MenuTile(
+                  icon: Icons.account_balance_wallet_outlined,
+                  title: 'Cấu hình danh mục tài chính',
+                  subtitle: 'Tùy chỉnh 6 hũ chi tiêu và ngân sách',
+                  onTap: families.isEmpty
+                      ? () {}
+                      : () => Navigator.of(context).pushNamed(
+                          AppRoutes.familyDetail,
+                          arguments: families.first.familyId),
                 ),
-                child: Icon(Icons.lock_reset, color: AppColors.primary),
-              ),
-              title: Text('Thay đổi mật khẩu', style: AppTypography.titleSm),
-              subtitle: Text('Cập nhật mật khẩu bảo vệ tài khoản',
-                  style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
-              trailing: Icon(Icons.chevron_right, color: AppColors.outline),
-              onTap: () => Navigator.of(context).pushNamed(AppRoutes.forgotPassword),
+                const Divider(height: 1),
+                _MenuTile(
+                  icon: Icons.diversity_3,
+                  title: 'Cấu hình gia đình',
+                  subtitle: 'Quản lý thành viên và quyền hạn tổ ấm',
+                  onTap: families.isEmpty
+                      ? () {}
+                      : () => Navigator.of(context).pushNamed(
+                          AppRoutes.familyDetail,
+                          arguments: families.first.familyId),
+                ),
+                const Divider(height: 1),
+                _MenuTile(
+                  icon: Icons.lock_reset,
+                  title: 'Thay đổi mật khẩu',
+                  subtitle: 'Cập nhật mật khẩu bảo vệ tài khoản',
+                  onTap: () =>
+                      Navigator.of(context).pushNamed(AppRoutes.forgotPassword),
+                ),
+                const Divider(height: 1),
+                _MenuTile(
+                  icon: Icons.support_agent,
+                  title: 'Gửi thông tin cần hỗ trợ',
+                  subtitle: 'Liên hệ và gửi yêu cầu trợ giúp',
+                  onTap: () => Navigator.of(context)
+                      .pushNamed(AppRoutes.supportFeedback),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -187,15 +238,18 @@ class ProfileTab extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.shield_outlined, size: 14, color: AppColors.outline),
+                    Icon(Icons.shield_outlined,
+                        size: 14, color: AppColors.outline),
                     const SizedBox(width: 4),
                     Text('Bảo mật dữ liệu gia đình tiêu chuẩn AES-256',
-                        style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                        style: AppTypography.labelSm
+                            .copyWith(color: AppColors.outline)),
                   ],
                 ),
                 const SizedBox(height: 2),
                 Text('FinNest · Phiên bản 2.4.0',
-                    style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.outline)),
               ],
             ),
           ),
@@ -205,8 +259,43 @@ class ProfileTab extends StatelessWidget {
   }
 }
 
+class _MenuTile extends StatelessWidget {
+  const _MenuTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: AppColors.pastelBlush,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: AppColors.primary, size: 20),
+      ),
+      title: Text(title, style: AppTypography.titleSm),
+      subtitle: Text(subtitle,
+          style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+      trailing: Icon(Icons.chevron_right, color: AppColors.outline),
+      onTap: onTap,
+    );
+  }
+}
+
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow(
+      {required this.icon, required this.label, required this.value});
 
   final IconData icon;
   final String label;
@@ -218,7 +307,9 @@ class _InfoRow extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: AppColors.outline),
         const SizedBox(width: 8),
-        Text(label, style: AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant)),
+        Text(label,
+            style: AppTypography.bodySm
+                .copyWith(color: AppColors.onSurfaceVariant)),
         const Spacer(),
         Text(value, style: AppTypography.titleSm),
       ],

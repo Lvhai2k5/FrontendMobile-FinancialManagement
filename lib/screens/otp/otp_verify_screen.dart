@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/otp_input.dart';
@@ -27,8 +29,6 @@ class OtpVerifyScreen extends StatefulWidget {
   const OtpVerifyScreen({super.key, required this.args});
 
   final OtpVerifyArgs args;
-
-  static const String demoValidCode = '000000';
 
   @override
   State<OtpVerifyScreen> createState() => _OtpVerifyScreenState();
@@ -70,7 +70,33 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
     return '${email.substring(0, 1)}***${email.substring(at)}';
   }
 
-  void _handleConfirm() {
+  String get _purposeKey => widget.args.purpose == OtpPurpose.register
+      ? 'REGISTER'
+      : 'RESET_PASSWORD';
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.error,
+      ),
+    );
+  }
+
+  Future<void> _handleResend() async {
+    final error = await context
+        .read<AuthProvider>()
+        .sendOtp(email: widget.args.email, purpose: _purposeKey);
+    if (!mounted) return;
+    if (error != null) {
+      _showError(error);
+      return;
+    }
+    _startCountdown();
+  }
+
+  Future<void> _handleConfirm() async {
     if (_code.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -81,15 +107,14 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
       );
       return;
     }
-    if (_code != OtpVerifyScreen.demoValidCode) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-              Text('Mã không đúng — dùng mã demo ${OtpVerifyScreen.demoValidCode} để tiếp tục.'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.error,
-        ),
-      );
+    final error = await context.read<AuthProvider>().verifyOtp(
+          email: widget.args.email,
+          purpose: _purposeKey,
+          otp: _code,
+        );
+    if (!mounted) return;
+    if (error != null) {
+      _showError(error);
       return;
     }
 
@@ -166,8 +191,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                           color: AppColors.primary, size: 28),
                     ),
                     const SizedBox(height: 16),
-                    Text('Xác thực mã OTP ✉️',
-                        style: AppTypography.headlineSm),
+                    Text('Xác thực mã OTP ✉️', style: AppTypography.headlineSm),
                     const SizedBox(height: 8),
                     Text(
                       'Mã xác thực 6 chữ số đã được gửi đến email của bạn:',
@@ -191,7 +215,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                             style: AppTypography.bodySm
                                 .copyWith(color: AppColors.onSurfaceVariant)),
                         GestureDetector(
-                          onTap: _secondsLeft == 0 ? _startCountdown : null,
+                          onTap: _secondsLeft == 0 ? _handleResend : null,
                           child: Text(
                             _secondsLeft == 0
                                 ? 'Gửi lại mã'
@@ -217,8 +241,8 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppColors.secondaryContainer
-                            .withValues(alpha: 0.5),
+                        color:
+                            AppColors.secondaryContainer.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -228,7 +252,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Kiểm tra thêm mục Thư rác (Spam) nếu bạn chưa thấy mã sau ít phút. Mã demo: ${OtpVerifyScreen.demoValidCode}.',
+                              'Kiểm tra thêm mục Thư rác (Spam) nếu bạn chưa thấy mã sau ít phút. Mã OTP gồm 6 số được gửi tới email của bạn, có hiệu lực 5 phút.',
                               style: AppTypography.bodySm
                                   .copyWith(color: AppColors.onSurfaceVariant),
                             ),
