@@ -26,6 +26,31 @@ class FamilyApi {
     return FamilyDetailModel.fromJson(res.data as Map<String, dynamic>);
   }
 
+  Future<void> addMember(int familyId, String username) async {
+    await apiClient
+        .post('/families/$familyId/members', data: {'username': username});
+  }
+
+  Future<void> removeMember(int familyId, int personId) async {
+    await apiClient.delete('/families/$familyId/members/$personId');
+  }
+
+  Future<void> updatePermissions(
+      int familyId, int personId, Set<String> permissions) async {
+    await apiClient.put('/families/$familyId/members/$personId/permissions',
+        data: {'permissions': permissions.toList()});
+  }
+
+  Future<void> transferOwnership(int familyId, int personId) async {
+    await apiClient
+        .post('/families/$familyId/members/$personId/transfer-ownership');
+  }
+
+  Future<void> setCategoryLocked(int categoryId, bool locked) async {
+    await apiClient.post(
+        '/financial-categories/$categoryId/${locked ? 'lock' : 'unlock'}');
+  }
+
   Future<void> createCategory(
     int familyId, {
     required String name,

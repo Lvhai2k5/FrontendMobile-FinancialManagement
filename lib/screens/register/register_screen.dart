@@ -4,17 +4,14 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
+import '../../utils/registration_validators.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/password_strength_meter.dart';
 import '../../widgets/common/terms_sheet.dart';
 import '../otp/otp_verify_screen.dart';
 
-/// Màn hình đăng ký. Backend chưa có endpoint `/auth/register` (không có
-/// trong `TECH-AUTH.md`) nên screen chỉ validate phía client rồi điều hướng
-/// sang xác thực OTP — khi Backend có API thật, thay đoạn validate-rồi-điều-
-/// hướng bằng gọi `AuthProvider.register()` như `LoginScreen` đang gọi
-/// `AuthProvider.login()`.
+/// Kiểm tra từng trường trước khi gọi API đăng ký và chuyển sang OTP.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -23,6 +20,9 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _confirmKey = GlobalKey<FormFieldState<String>>();
+  bool _submitted = false;
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -41,6 +41,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.addListener(() {
       setState(
           () => _strength = evaluatePasswordStrength(_passwordController.text));
+      if (_confirmController.text.isNotEmpty) {
+        _confirmKey.currentState?.validate();
+      }
     });
   }
 
@@ -66,35 +69,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleSubmit() async {
+    if (context.read<AuthProvider>().loading) return;
+    setState(() => _submitted = true);
+    final valid = _formKey.currentState!.validate();
+    if (!valid || !_agreeTerms) return;
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
-    final phone = _phoneController.text.trim();
+    final phone = RegistrationValidators.normalizePhone(_phoneController.text);
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
-    final confirm = _confirmController.text;
-
-    if (name.isEmpty || email.isEmpty || phone.isEmpty || password.isEmpty) {
-      _showError('Vui lòng nhập đầy đủ thông tin.');
-      return;
-    }
-    if (password != confirm) {
-      _showError('Xác nhận mật khẩu không khớp.');
-      return;
-    }
-    if (password.length < 8) {
-      _showError('Mật khẩu cần tối thiểu 8 ký tự.');
-      return;
-    }
-    if (!_agreeTerms) {
-      _showError('Vui lòng đồng ý Điều khoản dịch vụ & Chính sách.');
-      return;
-    }
-
-    if (!RegExp(r'^[A-Za-z0-9._]{3,30}$').hasMatch(username)) {
-      _showError(
-          'Tên tài khoản gồm 3–30 ký tự chữ, số, dấu chấm hoặc gạch dưới (không dấu, không khoảng trắng).');
-      return;
-    }
 
     final error = await context.read<AuthProvider>().register(
           name: name,
@@ -116,6 +99,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loading = context.watch<AuthProvider>().loading;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -127,7 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               _Header(onBack: () => Navigator.of(context).maybePop()),
               const SizedBox(height: 16),
               Text(
-                'Tạo tài khoản mới ✨',
+                'Tạo tài khoản mới',
                 textAlign: TextAlign.center,
                 style: AppTypography.headlineLgMobile,
               ),
@@ -145,85 +129,110 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AppTextField(
-                      label: 'Họ và tên',
-                      controller: _nameController,
-                      hintText: 'Nhập họ và tên',
-                      prefixIcon: Icons.person_outline,
-                      autofillHints: const [AutofillHints.name],
-                    ),
-                    const SizedBox(height: 16),
-                    AppTextField(
-                      label: 'Email',
-                      controller: _emailController,
-                      hintText: 'example@email.com',
-                      prefixIcon: Icons.mail_outline,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.email],
-                    ),
-                    const SizedBox(height: 16),
-                    AppTextField(
-                      label: 'Số điện thoại',
-                      controller: _phoneController,
-                      hintText: '0912 345 678',
-                      prefixIcon: Icons.call_outlined,
-                      keyboardType: TextInputType.phone,
-                      autofillHints: const [AutofillHints.telephoneNumber],
-                    ),
-                    const SizedBox(height: 16),
-                    AppTextField(
-                      label: 'Tên tài khoản',
-                      controller: _usernameController,
-                      hintText: 'Nhập tên tài khoản',
-                      prefixIcon: Icons.alternate_email,
-                      autofillHints: const [AutofillHints.newUsername],
-                    ),
-                    const SizedBox(height: 16),
-                    AppTextField(
-                      label: 'Mật khẩu',
-                      controller: _passwordController,
-                      hintText: '••••••••',
-                      prefixIcon: Icons.lock_outline,
-                      obscureText: _obscurePassword,
-                      onToggleObscure: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                      autofillHints: const [AutofillHints.newPassword],
-                    ),
-                    const SizedBox(height: 8),
-                    PasswordStrengthMeter(strength: _strength),
-                    const SizedBox(height: 16),
-                    AppTextField(
-                      label: 'Xác nhận mật khẩu',
-                      controller: _confirmController,
-                      hintText: '••••••••',
-                      prefixIcon: Icons.lock_outline,
-                      obscureText: _obscureConfirm,
-                      onToggleObscure: () =>
-                          setState(() => _obscureConfirm = !_obscureConfirm),
-                    ),
-                    const SizedBox(height: 16),
-                    _TermsCheckbox(
-                      value: _agreeTerms,
-                      onChanged: (value) => setState(() => _agreeTerms = value),
-                    ),
-                    const SizedBox(height: 16),
-                    AppButton(
-                      label: 'Tạo tài khoản ngay',
-                      trailingIcon: Icons.arrow_forward,
-                      backgroundColor: AppColors.primaryContainer,
-                      onPressed: _handleSubmit,
-                    ),
-                  ],
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      AppTextField(
+                        label: 'Họ và tên',
+                        validator: RegistrationValidators.name,
+                        controller: _nameController,
+                        hintText: 'Nhập họ và tên',
+                        prefixIcon: Icons.person_outline,
+                        autofillHints: const [AutofillHints.name],
+                      ),
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        label: 'Gmail',
+                        validator: RegistrationValidators.gmail,
+                        controller: _emailController,
+                        hintText: 'ten@gmail.com',
+                        prefixIcon: Icons.mail_outline,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                      ),
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        label: 'Số điện thoại',
+                        validator: RegistrationValidators.phone,
+                        controller: _phoneController,
+                        hintText: '0912 345 678',
+                        prefixIcon: Icons.call_outlined,
+                        keyboardType: TextInputType.phone,
+                        autofillHints: const [AutofillHints.telephoneNumber],
+                      ),
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        label: 'Tên tài khoản',
+                        validator: RegistrationValidators.username,
+                        controller: _usernameController,
+                        hintText: 'Nhập tên tài khoản',
+                        prefixIcon: Icons.account_circle_outlined,
+                        autofillHints: const [AutofillHints.newUsername],
+                      ),
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        label: 'Mật khẩu',
+                        validator: RegistrationValidators.password,
+                        controller: _passwordController,
+                        hintText: '••••••••',
+                        prefixIcon: Icons.lock_outline,
+                        obscureText: _obscurePassword,
+                        onToggleObscure: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
+                        autofillHints: const [AutofillHints.newPassword],
+                      ),
+                      const SizedBox(height: 8),
+                      PasswordStrengthMeter(strength: _strength),
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        label: 'Xác nhận mật khẩu',
+                        fieldKey: _confirmKey,
+                        validator: (value) =>
+                            RegistrationValidators.confirmPassword(
+                                value, _passwordController.text),
+                        controller: _confirmController,
+                        hintText: '••••••••',
+                        prefixIcon: Icons.lock_outline,
+                        obscureText: _obscureConfirm,
+                        onToggleObscure: () =>
+                            setState(() => _obscureConfirm = !_obscureConfirm),
+                      ),
+                      const SizedBox(height: 16),
+                      _TermsCheckbox(
+                        value: _agreeTerms,
+                        onChanged: (value) =>
+                            setState(() => _agreeTerms = value),
+                      ),
+                      if (_submitted && !_agreeTerms)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Text(
+                              'Vui lòng đồng ý Điều khoản dịch vụ & Chính sách.',
+                              style: AppTypography.bodySm
+                                  .copyWith(color: AppColors.error)),
+                        ),
+                      const SizedBox(height: 16),
+                      AppButton(
+                        label: loading
+                            ? 'Đang tạo tài khoản...'
+                            : 'Tạo tài khoản ngay',
+                        trailingIcon: loading ? null : Icons.arrow_forward,
+                        backgroundColor: AppColors.primaryContainer,
+                        onPressed: _handleSubmit,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
               Padding(
                 padding: const EdgeInsets.only(bottom: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 4,
                   children: [
                     Text('Đã có tài khoản? ',
                         style: AppTypography.bodyMd
@@ -306,57 +315,63 @@ class _TermsCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () async {
-        if (value) {
-          onChanged(false);
-          return;
-        }
-        final agreed = await showTermsSheet(context);
-        if (agreed == true) onChanged(true);
-      },
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 2),
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: value
-                  ? AppColors.primaryContainer
-                  : AppColors.surfaceContainer,
-              borderRadius: BorderRadius.circular(6),
+    return Semantics(
+      key: const ValueKey('register-consent'),
+      checked: value,
+      button: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () async {
+          if (value) {
+            onChanged(false);
+            return;
+          }
+          final agreed = await showTermsSheet(context);
+          if (agreed == true) onChanged(true);
+        },
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 2),
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: value
+                    ? AppColors.primaryContainer
+                    : AppColors.surfaceContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: value
+                  ? const Icon(Icons.check, size: 14, color: Colors.white)
+                  : null,
             ),
-            child: value
-                ? const Icon(Icons.check, size: 14, color: Colors.white)
-                : null,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                style: AppTypography.bodySm
-                    .copyWith(color: AppColors.onSurfaceVariant),
-                children: [
-                  const TextSpan(text: 'Tôi đồng ý với '),
-                  TextSpan(
-                    text: 'Điều khoản dịch vụ',
-                    style: TextStyle(
-                        color: AppColors.primary, fontWeight: FontWeight.w600),
-                  ),
-                  const TextSpan(text: ' & '),
-                  TextSpan(
-                    text: 'Chính sách',
-                    style: TextStyle(
-                        color: AppColors.primary, fontWeight: FontWeight.w600),
-                  ),
-                  const TextSpan(text: ' của FinNest'),
-                ],
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  style: AppTypography.bodySm
+                      .copyWith(color: AppColors.onSurfaceVariant),
+                  children: [
+                    const TextSpan(text: 'Tôi đồng ý với '),
+                    TextSpan(
+                        text: 'Điều khoản dịch vụ',
+                        style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600)),
+                    const TextSpan(text: ' & '),
+                    TextSpan(
+                        text: 'Chính sách',
+                        style: TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600)),
+                    const TextSpan(text: ' của FinNest'),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

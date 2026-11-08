@@ -31,12 +31,12 @@ Future<void> promptCreateFamily(BuildContext context) async {
   showSnack(context, error ?? 'Đã tạo gia đình "$name".', error: error != null);
 }
 
-/// Nhập mã mời dạng `#FN-<số>` để tham gia gia đình có sẵn.
+/// Nhập mã mời do Chủ hộ sao chép từ Chi tiết gia đình.
 Future<void> promptJoinFamily(BuildContext context) async {
   final code = await showTextInputDialog(
     context,
     title: 'Nhập mã mời',
-    hint: '#FN-1',
+    hint: 'Dán mã mời của tổ ấm',
     message: 'Nhờ Chủ hộ gửi mã gia đình (hiện ở màn Chi tiết gia đình).',
     confirmLabel: 'Gia nhập',
   );

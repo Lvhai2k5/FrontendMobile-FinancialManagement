@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../api/family_api.dart';
@@ -16,6 +17,7 @@ class FamilyProvider with ChangeNotifier {
   final Map<int, List<ThresholdModel>> _thresholds = {};
   int? _selectedFamilyId;
 
+  int _loadVersion = 0;
   bool loading = false;
   String? errorMessage;
 
@@ -44,16 +46,28 @@ class FamilyProvider with ChangeNotifier {
 
   /// Tải lại toàn bộ danh sách gia đình + chi tiết (hũ, thành viên, số dư).
   Future<void> load() async {
+    final version = ++_loadVersion;
     loading = true;
     errorMessage = null;
     notifyListeners();
     try {
       final list = await _api.list();
-      final details =
-          await Future.wait(list.map((f) => _api.detail(f.familyId)));
+      final resolved = await Future.wait(list.map((f) async {
+        try {
+          return await _api.detail(f.familyId);
+        } on DioException catch (e) {
+          if (e.response?.statusCode == 403 || e.response?.statusCode == 404) {
+            return null;
+          }
+          rethrow;
+        }
+      }));
+      if (version != _loadVersion) return;
+      final details = resolved.whereType<FamilyDetailModel>();
+      final availableIds = details.map((d) => d.familyId).toSet();
       _families
         ..clear()
-        ..addAll(list);
+        ..addAll(list.where((f) => availableIds.contains(f.familyId)));
       _details
         ..clear()
         ..addEntries(details.map((d) => MapEntry(d.familyId, d)));
@@ -68,10 +82,12 @@ class FamilyProvider with ChangeNotifier {
         _selectedFamilyId = _families.isEmpty ? null : _families.first.familyId;
       }
     } catch (e) {
-      errorMessage = apiErrorMessage(e);
+      if (version == _loadVersion) errorMessage = apiErrorMessage(e);
     } finally {
-      loading = false;
-      notifyListeners();
+      if (version == _loadVersion) {
+        loading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -95,6 +111,34 @@ class FamilyProvider with ChangeNotifier {
       _selectedFamilyId = joined.familyId;
       notifyListeners();
       return null;
+    } catch (e) {
+      return apiErrorMessage(e);
+    }
+  }
+
+  Future<String?> addMember(int familyId, String username) =>
+      _change(() => _api.addMember(familyId, username));
+
+  Future<String?> removeMember(int familyId, int personId) =>
+      _change(() => _api.removeMember(familyId, personId));
+
+  Future<String?> updatePermissions(
+          int familyId, int personId, Set<String> permissions) =>
+      _change(() => _api.updatePermissions(familyId, personId, permissions));
+
+  Future<String?> transferOwnership(int familyId, int personId) =>
+      _change(() => _api.transferOwnership(familyId, personId));
+
+  Future<String?> setCategoryLocked(int categoryId, bool locked) =>
+      _change(() => _api.setCategoryLocked(categoryId, locked));
+
+  Future<String?> _change(Future<void> Function() action) async {
+    try {
+      await action();
+      await load();
+      return errorMessage == null
+          ? null
+          : 'Đã lưu thay đổi. Hãy tải lại để xem dữ liệu mới.';
     } catch (e) {
       return apiErrorMessage(e);
     }
@@ -157,6 +201,8 @@ class FamilyProvider with ChangeNotifier {
 
   /// Xoá dữ liệu khi đăng xuất để tài khoản khác đăng nhập không thấy dữ liệu cũ.
   void clear() {
+    _loadVersion++;
+    loading = false;
     _families.clear();
     _details.clear();
     _thresholds.clear();

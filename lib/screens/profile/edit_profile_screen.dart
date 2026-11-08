@@ -82,7 +82,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         foregroundColor: AppColors.onSurface,
-        title: Text('Chỉnh sửa thông tin', style: AppTypography.titleSm),
+        title: const Text('Chỉnh sửa thông tin'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),

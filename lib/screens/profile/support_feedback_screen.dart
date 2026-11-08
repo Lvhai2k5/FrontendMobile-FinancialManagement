@@ -128,7 +128,7 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         foregroundColor: AppColors.onSurface,
-        title: Text('Gửi Phản Ánh & Khiếu Nại', style: AppTypography.titleSm),
+        title: const Text('Gửi Phản Ánh & Khiếu Nại'),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: 12),

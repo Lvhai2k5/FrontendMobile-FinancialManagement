@@ -31,6 +31,11 @@ class TransactionApi {
     return TransactionModel.fromJson(res.data as Map<String, dynamic>);
   }
 
+  Future<TransactionModel> submitQueued(Map<String, dynamic> payload) async {
+    final res = await apiClient.post('/transactions', data: payload);
+    return TransactionModel.fromJson(res.data as Map<String, dynamic>);
+  }
+
   Future<void> approve(int transactionId) async {
     await apiClient.post('/transactions/$transactionId/approve');
   }

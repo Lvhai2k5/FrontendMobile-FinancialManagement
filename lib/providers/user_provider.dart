@@ -10,10 +10,14 @@ class UserProvider with ChangeNotifier {
 
   final UserApi _api;
   UserModel? user;
+  int _session = 0;
 
   Future<void> load() async {
+    final session = _session;
     try {
-      user = await _api.me();
+      final loaded = await _api.me();
+      if (session != _session) return;
+      user = loaded;
       notifyListeners();
     } catch (_) {
       // Màn hình tự hiển thị trạng thái "chưa có dữ liệu".
@@ -43,6 +47,7 @@ class UserProvider with ChangeNotifier {
   }
 
   void clear() {
+    _session++;
     user = null;
     notifyListeners();
   }

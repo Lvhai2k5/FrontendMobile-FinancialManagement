@@ -72,39 +72,46 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         foregroundColor: AppColors.onSurface,
         title: const Text('Thông báo'),
       ),
-      body: notifications.isEmpty
-          ? Center(
-              child: Text('Không có thông báo mới.',
-                  style:
-                      AppTypography.bodyMd.copyWith(color: AppColors.outline)),
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
               children: [
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _chip('Tất cả (${all.length})', _NotifFilter.all),
-                      _chip('Giao dịch ($txCount)', _NotifFilter.transaction),
-                      _chip('Hạn mức ($thCount)', _NotifFilter.threshold),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                for (final n in notifications)
-                  _NotificationCard(notification: n),
-                const SizedBox(height: 8),
-                Center(
-                  child: TextButton(
-                    onPressed: () {},
-                    child: Text('Xem tất cả thông báo cũ →',
-                        style: AppTypography.labelMd
-                            .copyWith(color: AppColors.onSurfaceVariant)),
-                  ),
-                ),
+                _chip('Tất cả (${all.length})', _NotifFilter.all),
+                _chip('Giao dịch ($txCount)', _NotifFilter.transaction),
+                _chip('Hạn mức ($thCount)', _NotifFilter.threshold),
               ],
             ),
+          ),
+          Expanded(
+            child: notifications.isEmpty
+                ? Center(
+                    child: Text('Không có thông báo mới.',
+                        style: AppTypography.bodyMd
+                            .copyWith(color: AppColors.outline)),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    children: [
+                      for (final n in notifications)
+                        _NotificationCard(notification: n),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: TextButton(
+                          onPressed: () {},
+                          child: Text('Xem tất cả thông báo cũ →',
+                              style: AppTypography.labelMd
+                                  .copyWith(color: AppColors.onSurfaceVariant)),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }

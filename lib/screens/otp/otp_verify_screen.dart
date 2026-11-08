@@ -22,9 +22,8 @@ class OtpVerifyArgs {
   final OtpPurpose purpose;
 }
 
-/// Màn xác thực mã OTP dùng chung cho luồng Đăng ký & Quên mật khẩu. Backend
-/// chưa có endpoint gửi/xác thực OTP nên mã hợp lệ được mô phỏng cố định là
-/// `000000`, đủ để review được toàn bộ luồng UI trước khi có API thật.
+/// Màn OTP cho Đăng ký & Quên mật khẩu; gửi và xác thực qua AuthProvider.
+/// Mã hợp lệ do backend quyết định theo cấu hình mail/OTP của môi trường.
 class OtpVerifyScreen extends StatefulWidget {
   const OtpVerifyScreen({super.key, required this.args});
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'config/theme.dart';
@@ -26,6 +27,9 @@ class FinanceManagementApp extends StatelessWidget {
         title: 'FinNest',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
+        locale: const Locale('vi'),
+        supportedLocales: const [Locale('vi'), Locale('en')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
         navigatorKey: AppRoutes.navigatorKey,
         initialRoute: AppRoutes.welcome,
         onGenerateRoute: AppRoutes.onGenerateRoute,

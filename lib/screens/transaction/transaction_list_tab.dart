@@ -2,18 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
+import '../../widgets/layout/home_tab_header.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/family_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/format_currency.dart';
+import 'offline_queue_panel.dart';
 
 /// Tab "Giao dịch" — 4 cách tạo giao dịch (chỉ "Nhập thủ công" hoạt động
 /// thật, 3 kênh còn lại chưa có trong phạm vi Backend hiện tại, xem
 /// `BUSINESS-REQUIREMENTS.md` mục 3.4.1) + danh sách giao dịch gộp theo
 /// ngày. Thiết kế theo `finnest_tab_giao_d_ch`.
 class TransactionListTab extends StatefulWidget {
-  const TransactionListTab({super.key});
+  const TransactionListTab({super.key, this.familyId});
+
+  final int? familyId;
 
   @override
   State<TransactionListTab> createState() => _TransactionListTabState();
@@ -21,7 +25,7 @@ class TransactionListTab extends StatefulWidget {
 
 class _TransactionListTabState extends State<TransactionListTab> {
   final _searchController = TextEditingController();
-  int _filterIndex = 0;
+  late int _filterIndex = widget.familyId == null ? 0 : 3;
 
   static const _filters = ['Tất cả', 'Hôm nay', 'Tuần này', 'Tháng này'];
 
@@ -73,9 +77,22 @@ class _TransactionListTabState extends State<TransactionListTab> {
 
   @override
   Widget build(BuildContext context) {
-    final all = context.watch<TransactionProvider>().transactions;
+    final families = context.watch<FamilyProvider>();
+    final all = context
+        .watch<TransactionProvider>()
+        .transactions
+        .where((transaction) =>
+            (widget.familyId == null ||
+                widget.familyId == transaction.familyId) &&
+            (transaction.familyId == null ||
+                families.detail(transaction.familyId)?.canRead == true))
+        .toList();
     final now = DateTime.now();
-    final filtered = _applyFilter(all);
+    final query = _searchController.text.trim().toLowerCase();
+    final filtered = _applyFilter(all).where((transaction) =>
+        query.isEmpty ||
+        transaction.content.toLowerCase().contains(query) ||
+        transaction.categoryName.toLowerCase().contains(query));
 
     final groups = <String, List<TransactionModel>>{};
     for (final t in filtered) {
@@ -84,63 +101,74 @@ class _TransactionListTabState extends State<TransactionListTab> {
     }
 
     return RefreshIndicator(
-        onRefresh: () => context.read<TransactionProvider>().load(),
+        onRefresh: () async {
+          final transactions = context.read<TransactionProvider>();
+          await Future.wait([families.load(), transactions.load()]);
+        },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Phương thức tạo giao dịch',
-                  style: AppTypography.headlineSm),
-              const SizedBox(height: 12),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 2.6,
-                children: [
-                  _MethodCard(
-                    icon: Icons.edit_note,
-                    iconColor: AppColors.primary,
-                    bgColor: AppColors.pastelBlush,
-                    title: 'Nhập thủ công',
-                    subtitle: 'Điền biểu mẫu',
-                    onTap: () => Navigator.of(context).pushNamed(
-                      AppRoutes.transactionForm,
-                      arguments:
-                          context.read<FamilyProvider>().selectedFamilyId,
+              if (widget.familyId == null) ...[
+                const HomeTabHeader(
+                    title: 'Giao dịch',
+                    subtitle: 'Thu chi của tổ ấm',
+                    artwork: HomeTabArtwork.transactions,
+                    icon: Icons.receipt_long_outlined),
+                Text('Phương thức tạo giao dịch',
+                    style: AppTypography.headlineSm),
+                const SizedBox(height: 12),
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  mainAxisExtent:
+                      54 + MediaQuery.textScalerOf(context).scale(48),
+                  children: [
+                    _MethodCard(
+                      icon: Icons.edit_note,
+                      fill: HomeTabColors.sageTint,
+                      ink: HomeTabColors.sage,
+                      title: 'Nhập thủ công',
+                      subtitle: 'Điền biểu mẫu',
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.transactionForm,
+                        arguments:
+                            context.read<FamilyProvider>().selectedFamilyId,
+                      ),
                     ),
-                  ),
-                  _MethodCard(
-                    icon: Icons.document_scanner_outlined,
-                    iconColor: AppColors.primary,
-                    bgColor: AppColors.pastelLavender,
-                    title: 'Quét hoá đơn',
-                    subtitle: 'Tự trích xuất AI',
-                    onTap: () => _showComingSoon('Quét hoá đơn AI'),
-                  ),
-                  _MethodCard(
-                    icon: Icons.mic_none,
-                    iconColor: AppColors.secondary,
-                    bgColor: AppColors.pastelLavender,
-                    title: 'Ghi âm giọng nói',
-                    subtitle: 'Nói nhanh thu chi',
-                    onTap: () => _showComingSoon('Ghi âm giọng nói'),
-                  ),
-                  _MethodCard(
-                    icon: Icons.center_focus_weak,
-                    iconColor: AppColors.secondary,
-                    bgColor: AppColors.pastelSage,
-                    title: 'Quét đồ vật',
-                    subtitle: 'Nhận diện chụp ảnh',
-                    onTap: () => _showComingSoon('Quét đồ vật'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                    _MethodCard(
+                      icon: Icons.document_scanner_outlined,
+                      fill: HomeTabColors.wheatTint,
+                      ink: HomeTabColors.amber,
+                      title: 'Quét hoá đơn',
+                      onTap: () => _showComingSoon('Quét hoá đơn AI'),
+                    ),
+                    _MethodCard(
+                      icon: Icons.mic_none,
+                      fill: HomeTabColors.peachTint,
+                      ink: HomeTabColors.coral,
+                      title: 'Ghi âm giọng nói',
+                      onTap: () => _showComingSoon('Ghi âm giọng nói'),
+                    ),
+                    _MethodCard(
+                      icon: Icons.center_focus_weak,
+                      fill: HomeTabColors.sageTint,
+                      ink: HomeTabColors.sage,
+                      title: 'Quét đồ vật',
+                      onTap: () => _showComingSoon('Quét đồ vật'),
+                    ),
+                  ],
+                ),
+                const OfflineQueuePanel(),
+              ],
+              const SizedBox(height: 20),
+              Text('Lịch sử giao dịch', style: AppTypography.headlineSm),
+              const SizedBox(height: 10),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
@@ -154,6 +182,7 @@ class _TransactionListTabState extends State<TransactionListTab> {
                     Expanded(
                       child: TextField(
                         controller: _searchController,
+                        onChanged: (_) => setState(() {}),
                         style: AppTypography.bodyMd,
                         decoration: InputDecoration(
                           hintText: 'Tìm kiếm giao dịch...',
@@ -171,7 +200,9 @@ class _TransactionListTabState extends State<TransactionListTab> {
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
                 children: [
                   for (var i = 0; i < _filters.length; i++)
                     Padding(
@@ -180,11 +211,11 @@ class _TransactionListTabState extends State<TransactionListTab> {
                         label: Text(_filters[i]),
                         selected: _filterIndex == i,
                         onSelected: (_) => setState(() => _filterIndex = i),
-                        selectedColor: AppColors.primary,
+                        selectedColor: HomeTabColors.sageTint,
                         backgroundColor: AppColors.surfaceContainerLowest,
                         labelStyle: AppTypography.labelSm.copyWith(
                             color: _filterIndex == i
-                                ? Colors.white
+                                ? HomeTabColors.sage
                                 : AppColors.onSurfaceVariant),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999)),
@@ -257,57 +288,45 @@ class _TransactionListTabState extends State<TransactionListTab> {
 class _MethodCard extends StatelessWidget {
   const _MethodCard({
     required this.icon,
-    required this.iconColor,
-    required this.bgColor,
+    required this.fill,
+    required this.ink,
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.onTap,
   });
 
   final IconData icon;
-  final Color iconColor;
-  final Color bgColor;
+  final Color fill;
+  final Color ink;
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                  color: bgColor, borderRadius: BorderRadius.circular(10)),
-              child: Icon(icon, size: 18, color: iconColor),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(title,
-                      style: AppTypography.labelMd,
-                      overflow: TextOverflow.ellipsis),
-                  Text(subtitle,
-                      style: AppTypography.labelSm
-                          .copyWith(color: AppColors.outline),
-                      overflow: TextOverflow.ellipsis),
-                ],
-              ),
-            ),
-          ],
+    return Material(
+      color: fill,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: HomeTabColors.border),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 25, color: ink),
+              const SizedBox(height: 5),
+              Text(title,
+                  textAlign: TextAlign.center, style: AppTypography.labelMd),
+              if (subtitle case final text?)
+                Text(text,
+                    textAlign: TextAlign.center, style: AppTypography.bodySm),
+            ],
+          ),
         ),
       ),
     );
@@ -332,15 +351,15 @@ class _TransactionTile extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isExpense
-                  ? AppColors.pastelBlush
-                  : AppColors.secondaryContainer,
+              color:
+                  isExpense ? HomeTabColors.peachTint : HomeTabColors.sageTint,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               isExpense ? Icons.arrow_upward : Icons.arrow_downward,
               size: 16,
-              color: isExpense ? AppColors.primary : AppColors.secondary,
+              color:
+                  isExpense ? AppColors.onSurfaceVariant : HomeTabColors.sage,
             ),
           ),
           const SizedBox(width: 10),
@@ -365,7 +384,8 @@ class _TransactionTile extends StatelessWidget {
               Text(
                 '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)} đ',
                 style: AppTypography.titleSm.copyWith(
-                    color: isExpense ? AppColors.primary : AppColors.secondary),
+                    color:
+                        isExpense ? HomeTabColors.coral : HomeTabColors.sage),
               ),
               const SizedBox(height: 2),
               Container(

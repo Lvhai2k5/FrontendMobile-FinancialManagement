@@ -4,14 +4,23 @@ import '../../config/theme.dart';
 
 /// Logo + chữ "FinNest" (Fin đen, Nest nâu đỏ) dùng ở đầu các màn hình.
 class BrandWordmark extends StatelessWidget {
-  const BrandWordmark({super.key, this.logoSize = 40, this.fontSize = 26});
+  const BrandWordmark({
+    super.key,
+    this.logoSize = 40,
+    this.fontSize = 26,
+    this.wordmarkColor,
+  });
 
   final double logoSize;
   final double fontSize;
+  final Color? wordmarkColor;
 
   @override
   Widget build(BuildContext context) {
-    final style = AppTypography.brandTitle.copyWith(fontSize: fontSize);
+    final style = AppTypography.brandTitle.copyWith(
+      fontSize: fontSize,
+      color: wordmarkColor,
+    );
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -42,7 +51,8 @@ class BrandWordmark extends StatelessWidget {
             children: [
               TextSpan(
                   text: 'Nest',
-                  style: style.copyWith(color: AppColors.primary)),
+                  style: style.copyWith(
+                      color: wordmarkColor ?? AppColors.primary)),
             ],
           ),
         ),

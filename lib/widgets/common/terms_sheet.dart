@@ -4,24 +4,27 @@ import '../../config/theme.dart';
 
 /// Hiện sheet "Điều khoản & Chính sách" (thiết kế `screen2.1`).
 /// Trả về `true` nếu người dùng bấm "Tôi đã hiểu & Đồng ý".
-Future<bool?> showTermsSheet(BuildContext context) {
+Future<bool?> showTermsSheet(BuildContext context,
+    {bool showPrivacy = false, bool readOnly = false}) {
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => const _TermsSheet(),
+    builder: (_) => _TermsSheet(showPrivacy: showPrivacy, readOnly: readOnly),
   );
 }
 
 class _TermsSheet extends StatefulWidget {
-  const _TermsSheet();
+  const _TermsSheet({required this.showPrivacy, required this.readOnly});
+  final bool showPrivacy;
+  final bool readOnly;
 
   @override
   State<_TermsSheet> createState() => _TermsSheetState();
 }
 
 class _TermsSheetState extends State<_TermsSheet> {
-  bool _showTerms = true;
+  late bool _showTerms = !widget.showPrivacy;
 
   static const _terms = <(String, String)>[
     (
@@ -83,9 +86,11 @@ class _TermsSheetState extends State<_TermsSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Điều khoản & Chính sách',
-                          style: AppTypography.headlineSm),
+                          style: IntroTypography.heading.copyWith(
+                            fontWeight: FontWeight.w600,
+                          )),
                       Text('Cập nhật lần cuối: Tháng 10/2024',
-                          style: AppTypography.bodySm
+                          style: IntroTypography.small
                               .copyWith(color: AppColors.outline)),
                     ],
                   ),
@@ -133,7 +138,7 @@ class _TermsSheetState extends State<_TermsSheet> {
                       Expanded(
                         child: Text(
                           'Chào mừng bạn đến với FinNest - Nền tảng quản trị tài chính gia đình ấm áp, văn minh và minh bạch dành riêng cho tổ ấm Việt.',
-                          style: AppTypography.bodySm
+                          style: IntroTypography.small
                               .copyWith(color: AppColors.onSurfaceVariant),
                         ),
                       ),
@@ -148,20 +153,20 @@ class _TermsSheetState extends State<_TermsSheet> {
                         radius: 12,
                         backgroundColor: AppColors.pastelBlush,
                         child: Text('${i + 1}',
-                            style: AppTypography.labelSm
+                            style: IntroTypography.caption
                                 .copyWith(color: AppColors.primary)),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                           child:
-                              Text(items[i].$1, style: AppTypography.titleSm)),
+                              Text(items[i].$1, style: IntroTypography.title)),
                     ],
                   ),
                   const SizedBox(height: 6),
                   Padding(
                     padding: const EdgeInsets.only(left: 34, bottom: 16),
                     child: Text(items[i].$2,
-                        style: AppTypography.bodyMd
+                        style: IntroTypography.body
                             .copyWith(color: AppColors.onSurfaceVariant)),
                   ),
                 ],
@@ -175,41 +180,49 @@ class _TermsSheetState extends State<_TermsSheet> {
               top: false,
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.check_circle_outline,
-                          size: 16, color: AppColors.secondary),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                            'Bằng việc tiếp tục, bạn đồng ý với các quy định bảo vệ tổ ấm của FinNest.',
-                            style: AppTypography.labelSm
-                                .copyWith(color: AppColors.onSurfaceVariant)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                  if (!widget.readOnly)
+                    Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline,
+                            size: 16, color: AppColors.secondary),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                              'Bằng việc tiếp tục, bạn đồng ý với các quy định bảo vệ tổ ấm của FinNest.',
+                              style: IntroTypography.caption
+                                  .copyWith(color: AppColors.onSurfaceVariant)),
+                        ),
+                      ],
+                    ),
+                  if (!widget.readOnly) const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: () => Navigator.of(context).pop(true),
+                          onPressed: () =>
+                              Navigator.of(context).pop(!widget.readOnly),
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            textStyle:
+                                IntroTypography.title.copyWith(height: 1.25),
                             minimumSize: const Size.fromHeight(52),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(999)),
                           ),
                           icon: const Icon(Icons.check, size: 18),
-                          label: const Text('Tôi đã hiểu & Đồng ý'),
+                          label: Text(widget.readOnly
+                              ? 'Đã hiểu'
+                              : 'Tôi đã hiểu & Đồng ý'),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: Text('Đóng lại',
-                            style: AppTypography.labelMd
-                                .copyWith(color: AppColors.onSurfaceVariant)),
-                      ),
+                      if (!widget.readOnly)
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: Text('Đóng lại',
+                              style: IntroTypography.label
+                                  .copyWith(color: AppColors.onSurfaceVariant)),
+                        ),
                     ],
                   ),
                 ],
@@ -241,8 +254,8 @@ class _TermsSheetState extends State<_TermsSheet> {
               const SizedBox(width: 6),
               Flexible(
                 child: Text(label,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.labelMd.copyWith(
+                    textAlign: TextAlign.center,
+                    style: IntroTypography.label.copyWith(
                         color: selected
                             ? AppColors.primary
                             : AppColors.onSurfaceVariant)),

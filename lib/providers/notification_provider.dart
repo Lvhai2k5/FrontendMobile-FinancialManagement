@@ -15,24 +15,29 @@ class NotificationProvider with ChangeNotifier {
   final TransactionApi _transactionApi;
   final List<NotificationModel> _notifications = [];
 
+  int _loadVersion = 0;
   bool loading = false;
 
   List<NotificationModel> get notifications =>
       List.unmodifiable(_notifications);
 
   Future<void> load() async {
+    final version = ++_loadVersion;
     loading = true;
     notifyListeners();
     try {
       final items = await _api.list();
+      if (version != _loadVersion) return;
       _notifications
         ..clear()
         ..addAll(items);
     } catch (_) {
       // Giữ danh sách cũ; thông báo không quan trọng bằng chặn UI.
     } finally {
-      loading = false;
-      notifyListeners();
+      if (version == _loadVersion) {
+        loading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -53,6 +58,8 @@ class NotificationProvider with ChangeNotifier {
   }
 
   void clear() {
+    _loadVersion++;
+    loading = false;
     _notifications.clear();
     notifyListeners();
   }

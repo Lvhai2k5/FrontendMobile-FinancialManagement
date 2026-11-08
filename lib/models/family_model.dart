@@ -19,17 +19,22 @@ class FamilyMemberModel {
     required this.personId,
     required this.name,
     required this.role,
+    this.permissions = const {},
   });
 
   final int personId;
   final String name;
   final MemberRole role;
+  final Set<String> permissions;
 
   factory FamilyMemberModel.fromJson(Map<String, dynamic> json) =>
       FamilyMemberModel(
         personId: asInt(json['personId']),
         name: json['name'] as String? ?? '?',
         role: memberRoleFromJson(json['role'] as String?),
+        permissions: ((json['permissions'] as List?) ?? const [])
+            .whereType<String>()
+            .toSet(),
       );
 
   String get initials {
@@ -50,6 +55,7 @@ class FamilySummaryModel {
     required this.totalBudget,
     required this.categoryCount,
     required this.members,
+    this.canRead = true,
   });
 
   final int familyId;
@@ -58,6 +64,7 @@ class FamilySummaryModel {
   final MemberRole myRole;
   final double totalBudget;
   final int categoryCount;
+  final bool canRead;
   final List<FamilyMemberModel> members;
 
   int get memberCount => members.length;
@@ -70,6 +77,7 @@ class FamilySummaryModel {
         myRole: memberRoleFromJson(json['myRole'] as String?),
         totalBudget: asDouble(json['totalBudget']),
         categoryCount: asInt(json['categoryCount']),
+        canRead: json['canRead'] != false,
         members: ((json['members'] as List?) ?? const [])
             .map((m) => FamilyMemberModel.fromJson(m as Map<String, dynamic>))
             .toList(),
@@ -144,6 +152,20 @@ class ThresholdModel {
       );
 }
 
+class CategoryAction {
+  const CategoryAction(this.id, this.name, this.locked);
+
+  final int id;
+  final String name;
+  final bool locked;
+
+  factory CategoryAction.fromJson(Map<String, dynamic> json) => CategoryAction(
+        asInt(json['financialCategoryId']),
+        json['name'] as String? ?? '',
+        json['status'] == 'LOCKED',
+      );
+}
+
 /// Chi tiết đầy đủ 1 Family — dùng cho màn "Chi tiết gia đình".
 class FamilyDetailModel {
   const FamilyDetailModel({
@@ -158,6 +180,8 @@ class FamilyDetailModel {
     required this.categories,
     required this.totalIncome,
     required this.totalExpense,
+    this.myPermissions = const {'READ', 'WRITE'},
+    this.categoryActions = const [],
   });
 
   final int familyId;
@@ -174,6 +198,20 @@ class FamilyDetailModel {
   /// (Backend chưa có endpoint tổng hợp báo cáo theo kỳ).
   final double totalIncome;
   final double totalExpense;
+  final Set<String> myPermissions;
+  final List<CategoryAction> categoryActions;
+
+  bool get isOwner => myRole == MemberRole.owner;
+  bool get canRead => isOwner || myPermissions.contains('READ');
+  bool get canWrite => isOwner || myPermissions.contains('WRITE');
+  bool get canApprove => isOwner || myPermissions.contains('APPROVAL');
+
+  List<CategoryAction> get actionCategories => categoryActions.isNotEmpty
+      ? categoryActions
+      : categories
+          .map((c) => CategoryAction(
+              c.financialCategoryId, c.name, c.status == CategoryStatus.locked))
+          .toList();
 
   factory FamilyDetailModel.fromJson(Map<String, dynamic> json) =>
       FamilyDetailModel(
@@ -193,5 +231,11 @@ class FamilyDetailModel {
             .toList(),
         totalIncome: asDouble(json['totalIncome']),
         totalExpense: asDouble(json['totalExpense']),
+        myPermissions: ((json['myPermissions'] as List?) ?? const [])
+            .whereType<String>()
+            .toSet(),
+        categoryActions: ((json['categoryActions'] as List?) ?? const [])
+            .map((c) => CategoryAction.fromJson(c as Map<String, dynamic>))
+            .toList(),
       );
 }

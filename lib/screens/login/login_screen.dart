@@ -165,8 +165,10 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 32),
               Padding(
                 padding: const EdgeInsets.only(bottom: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 4,
                   children: [
                     Text(
                       'Chưa có tài khoản để đăng nhập? ',
@@ -311,26 +313,18 @@ class _DividerWithLabel extends StatelessWidget {
   }
 }
 
-/// Xấp xỉ logo Google 4 màu — không dùng SVG/asset ngoài để tránh thêm phụ
-/// thuộc chỉ cho 1 icon trang trí.
+/// Logo Google chính thức, đóng gói trong app để hiển thị cả khi offline.
 class _GoogleMark extends StatelessWidget {
   const _GoogleMark();
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 16,
-      height: 16,
-      child: Text(
-        'G',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w800,
-          color: Color(0xFF4285F4),
-          height: 1.15,
-        ),
-      ),
+    return Image.asset(
+      'assets/images/google_logo.png',
+      width: 20,
+      height: 20,
+      fit: BoxFit.contain,
+      excludeFromSemantics: true,
     );
   }
 }

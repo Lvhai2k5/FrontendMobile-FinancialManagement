@@ -17,6 +17,8 @@ class AppButton extends StatelessWidget {
     this.trailingIcon,
     this.leadingWidget,
     this.backgroundColor,
+    this.labelStyle,
+    this.trailingIconOffset = Offset.zero,
   });
 
   final String label;
@@ -24,6 +26,10 @@ class AppButton extends StatelessWidget {
   final AppButtonVariant variant;
   final IconData? leadingIcon;
   final IconData? trailingIcon;
+  final TextStyle? labelStyle;
+
+  /// Hiệu chỉnh quang học theo font của nhãn, không thay đổi vùng bấm.
+  final Offset trailingIconOffset;
 
   /// Icon tùy biến (ví dụ logo SSO nhiều màu) khi 1 `IconData` không đủ.
   /// Ưu tiên hơn [leadingIcon] nếu cả 2 cùng được truyền.
@@ -38,6 +44,7 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final content = Row(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         if (leadingWidget != null) ...[
           leadingWidget!,
@@ -52,16 +59,24 @@ class AppButton extends StatelessWidget {
         ],
         Text(
           label,
-          style: AppTypography.titleSm.copyWith(
+          style: (labelStyle ?? AppTypography.titleSm).copyWith(
+            height: 1.25,
             color: _isPrimary ? Colors.white : AppColors.onSurface,
+          ),
+          textHeightBehavior: const TextHeightBehavior(
+            applyHeightToFirstAscent: false,
+            applyHeightToLastDescent: false,
           ),
         ),
         if (trailingIcon != null) ...[
           const SizedBox(width: 8),
-          Icon(
-            trailingIcon,
-            size: 18,
-            color: _isPrimary ? Colors.white : AppColors.secondary,
+          Transform.translate(
+            offset: trailingIconOffset,
+            child: Icon(
+              trailingIcon,
+              size: 18,
+              color: _isPrimary ? Colors.white : AppColors.secondary,
+            ),
           ),
         ],
       ],

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
-import '../../models/family_model.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/family_provider.dart';
 import '../../providers/notification_provider.dart';
@@ -59,7 +58,12 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     final content = _contentController.text.trim();
     final amount = double.tryParse(
         _amountController.text.replaceAll('.', '').replaceAll(',', ''));
-    if (content.isEmpty || amount == null || amount <= 0) {
+    if (_saving) return;
+    if (content.isEmpty ||
+        amount == null ||
+        !amount.isFinite ||
+        amount <= 0 ||
+        amount >= 1e12) {
       _showMessage('Vui lòng nhập đầy đủ nội dung và số tiền hợp lệ.',
           error: true);
       return;
@@ -69,8 +73,15 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       return;
     }
 
-    setState(() => _saving = true);
     final families = context.read<FamilyProvider>();
+    final detail = families.detail(_familyId ?? families.selectedFamilyId);
+    if (detail == null ||
+        !detail.canWrite ||
+        !detail.actionCategories.any((c) => c.id == _categoryId && !c.locked)) {
+      _showMessage('Bạn cần quyền Ghi và một danh mục đang mở.', error: true);
+      return;
+    }
+    setState(() => _saving = true);
     final notifications = context.read<NotificationProvider>();
     final result =
         await context.read<TransactionProvider>().addManualTransaction(
@@ -80,13 +91,18 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               type: _type,
             );
     if (!mounted) return;
-    setState(() => _saving = false);
-
     if (result.error != null) {
+      setState(() => _saving = false);
       _showMessage(result.error!, error: true);
       return;
     }
-    // Số dư/hạn mức/thông báo đổi theo giao dịch mới -> tải lại từ Backend.
+    if (result.queued) {
+      Navigator.of(context).pop();
+      _showMessage(
+          'Đã lưu trên thiết bị. Bạn có thể theo dõi tại mục Đồng bộ giao dịch.');
+      return;
+    }
+    // Cập nhật số dư, hạn mức và thông báo sau khi máy chủ ghi nhận.
     await families.load();
     await notifications.load();
     if (!mounted) return;
@@ -101,8 +117,12 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<FamilyProvider>();
     final families = provider.families;
-    final detail = provider.detail(_familyId);
-    final categories = detail?.categories ?? const <FinancialCategoryModel>[];
+    final requestedFamilyId = _familyId ?? provider.selectedFamilyId;
+    final familyId = families.any((f) => f.familyId == requestedFamilyId)
+        ? requestedFamilyId
+        : null;
+    final detail = provider.detail(familyId);
+    final categories = detail?.actionCategories ?? const [];
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -119,114 +139,144 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             _InfoBox(
                 'Bạn chưa thuộc gia đình nào. Hãy tạo gia đình hoặc nhập mã mời ở tab Gia đình trước khi ghi giao dịch.')
           else ...[
-            if (families.length > 1) ...[
-              Text('Gia đình',
-                  style: AppTypography.labelMd
-                      .copyWith(color: AppColors.onSurfaceVariant)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+            Text('Tổ ấm',
+                style: AppTypography.titleSm
+                    .copyWith(color: AppColors.onSurfaceVariant)),
+            const SizedBox(height: 8),
+            Semantics(
+              label: 'Tổ ấm',
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: AppColors.pastelBlush.withValues(alpha: 0.6)),
+                ),
+                child: DropdownButton<int>(
+                  value: familyId,
+                  hint: const Text('Chọn tổ ấm'),
+                  isExpanded: true,
+                  menuMaxHeight: 320,
+                  itemHeight: null,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  underline: const SizedBox.shrink(),
+                  icon: const Icon(Icons.keyboard_arrow_down),
+                  iconEnabledColor: AppColors.primary,
+                  dropdownColor: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  style:
+                      AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
+                  items: [
+                    for (final family in families)
+                      DropdownMenuItem(
+                        value: family.familyId,
+                        child: Text(family.name),
+                      ),
+                  ],
+                  selectedItemBuilder: (_) => [
+                    for (final family in families)
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child:
+                            Text(family.name, overflow: TextOverflow.ellipsis),
+                      ),
+                  ],
+                  onChanged: _saving
+                      ? null
+                      : (id) {
+                          if (id == null || id == familyId) return;
+                          setState(() {
+                            _familyId = id;
+                            _categoryId = null;
+                          });
+                        },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (familyId == null)
+              const _InfoBox('Chọn tổ ấm để xem danh mục.')
+            else if (detail?.canWrite != true)
+              const _InfoBox('Bạn chưa có quyền Ghi trong tổ ấm này.')
+            else ...[
+              Row(
                 children: [
-                  for (final f in families)
-                    ChoiceChip(
-                      label: Text(f.name),
-                      selected: _familyId == f.familyId,
-                      onSelected: (_) => setState(() {
-                        _familyId = f.familyId;
-                        _categoryId = null;
-                      }),
-                      selectedColor: AppColors.primaryContainer,
-                      backgroundColor: AppColors.surfaceContainerLow,
-                      labelStyle: AppTypography.labelSm.copyWith(
-                          color: _familyId == f.familyId
-                              ? Colors.white
-                              : AppColors.onSurfaceVariant),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999)),
-                      side: BorderSide.none,
+                  Expanded(
+                    child: _TypeToggle(
+                      label: 'Chi tiêu',
+                      icon: Icons.arrow_upward,
+                      selected: _type == TransactionType.expense,
+                      onTap: () =>
+                          setState(() => _type = TransactionType.expense),
                     ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _TypeToggle(
+                      label: 'Thu nhập',
+                      icon: Icons.arrow_downward,
+                      selected: _type == TransactionType.income,
+                      onTap: () =>
+                          setState(() => _type = TransactionType.income),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: _TypeToggle(
-                    label: 'Chi tiêu',
-                    icon: Icons.arrow_upward,
-                    selected: _type == TransactionType.expense,
-                    onTap: () =>
-                        setState(() => _type = TransactionType.expense),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _TypeToggle(
-                    label: 'Thu nhập',
-                    icon: Icons.arrow_downward,
-                    selected: _type == TransactionType.income,
-                    onTap: () => setState(() => _type = TransactionType.income),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            AppTextField(
-              label: 'Nội dung',
-              controller: _contentController,
-              hintText: 'Ví dụ: Siêu thị WinMart',
-              prefixIcon: Icons.edit_note,
-            ),
-            const SizedBox(height: 16),
-            AppTextField(
-              label: 'Số tiền',
-              controller: _amountController,
-              hintText: '0',
-              prefixIcon: Icons.payments_outlined,
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 16),
-            Text('Danh mục',
-                style: AppTypography.labelMd
-                    .copyWith(color: AppColors.onSurfaceVariant)),
-            const SizedBox(height: 8),
-            if (categories.isEmpty)
-              _InfoBox(
-                  'Gia đình này chưa có danh mục (hũ). Chủ hộ hãy thêm danh mục ở màn Chi tiết gia đình.')
-            else
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final c in categories)
-                    ChoiceChip(
-                      label: Text(c.status == CategoryStatus.locked
-                          ? '${c.name} (khoá)'
-                          : c.name),
-                      selected: _categoryId == c.financialCategoryId,
-                      onSelected: (_) =>
-                          setState(() => _categoryId = c.financialCategoryId),
-                      selectedColor: AppColors.primaryContainer,
-                      backgroundColor: AppColors.surfaceContainerLow,
-                      labelStyle: AppTypography.labelSm.copyWith(
-                          color: _categoryId == c.financialCategoryId
-                              ? Colors.white
-                              : AppColors.onSurfaceVariant),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999)),
-                      side: BorderSide.none,
-                    ),
-                ],
+              AppTextField(
+                label: 'Nội dung',
+                controller: _contentController,
+                hintText: 'Ví dụ: Siêu thị WinMart',
+                prefixIcon: Icons.edit_note,
               ),
-            const SizedBox(height: 24),
-            AppButton(
-              label: _saving ? 'Đang lưu...' : 'Lưu giao dịch',
-              trailingIcon: _saving ? null : Icons.check,
-              backgroundColor: AppColors.primaryContainer,
-              onPressed: _saving ? () {} : _handleSubmit,
-            ),
+              const SizedBox(height: 16),
+              AppTextField(
+                label: 'Số tiền',
+                controller: _amountController,
+                hintText: '0',
+                prefixIcon: Icons.payments_outlined,
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              Text('Danh mục',
+                  style: AppTypography.titleSm
+                      .copyWith(color: AppColors.onSurfaceVariant)),
+              const SizedBox(height: 8),
+              if (categories.isEmpty)
+                _InfoBox(
+                    'Gia đình này chưa có danh mục (hũ). Chủ hộ hãy thêm danh mục ở màn Chi tiết gia đình.')
+              else
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final c in categories)
+                      ChoiceChip(
+                        label: Text(c.locked ? '${c.name} (khoá)' : c.name),
+                        selected: _categoryId == c.id && !c.locked,
+                        onSelected: c.locked
+                            ? null
+                            : (_) => setState(() => _categoryId = c.id),
+                        selectedColor: AppColors.primaryContainer,
+                        backgroundColor: AppColors.surfaceContainerLow,
+                        labelStyle: AppTypography.labelMd.copyWith(
+                            color: _categoryId == c.id
+                                ? Colors.white
+                                : AppColors.onSurfaceVariant),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999)),
+                        side: BorderSide.none,
+                      ),
+                  ],
+                ),
+              const SizedBox(height: 24),
+              AppButton(
+                label: _saving ? 'Đang lưu...' : 'Lưu giao dịch',
+                trailingIcon: _saving ? null : Icons.check,
+                backgroundColor: AppColors.primaryContainer,
+                onPressed: _handleSubmit,
+              ),
+            ],
           ],
         ],
       ),
@@ -249,7 +299,7 @@ class _InfoBox extends StatelessWidget {
       ),
       child: Text(text,
           style:
-              AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant)),
+              AppTypography.bodyMd.copyWith(color: AppColors.onSurfaceVariant)),
     );
   }
 }
@@ -286,10 +336,13 @@ class _TypeToggle extends StatelessWidget {
                 size: 16,
                 color: selected ? Colors.white : AppColors.onSurfaceVariant),
             const SizedBox(width: 6),
-            Text(label,
-                style: AppTypography.titleSm.copyWith(
-                    color:
-                        selected ? Colors.white : AppColors.onSurfaceVariant)),
+            Flexible(
+              child: Text(label,
+                  style: AppTypography.titleSm.copyWith(
+                      color: selected
+                          ? Colors.white
+                          : AppColors.onSurfaceVariant)),
+            ),
           ],
         ),
       ),

@@ -35,6 +35,12 @@ class ThresholdConfigScreen extends StatelessWidget {
     final provider = context.watch<FamilyProvider>();
     final thresholds = provider.thresholdsOf(args.categoryId);
     final isOwner = args.myRole == MemberRole.owner;
+    if (thresholds.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Cấu hình hạn mức')),
+        body: const Center(child: Text('Danh mục không còn khả dụng.')),
+      );
+    }
 
     ThresholdModel of(ThresholdType type) =>
         thresholds.firstWhere((t) => t.type == type);
@@ -109,7 +115,7 @@ class ThresholdConfigScreen extends StatelessWidget {
             icon: Icons.how_to_reg_outlined,
             title: 'Hạn mức cần chấp thuận',
             description:
-                'Giao dịch vượt quá số tiền này cần chủ hộ phê duyệt trước khi ghi nhận.',
+                'Khoản chi của thành viên từ mức này sẽ chờ người có quyền Duyệt.',
             amountLabel: 'Ngưỡng tiền phê duyệt mỗi lần',
             threshold: of(ThresholdType.approve),
             quickAmounts: const [500000, 1000000, 2000000, 5000000],
@@ -144,7 +150,7 @@ class ThresholdConfigScreen extends StatelessWidget {
             icon: Icons.lock_clock_outlined,
             title: 'Hạn mức khẩn cấp',
             description:
-                'Tự động khoá tạm thời danh mục chi tiêu khi số dư chạm mức báo động để bảo toàn quỹ.',
+                'Danh mục tự khóa khi tổng chi đã duyệt chạm ngưỡng này.',
             amountLabel: 'Ngưỡng kích hoạt phong toả',
             threshold: of(ThresholdType.emergency),
             quickAmounts: const [1000000, 2000000, 3000000, 5000000],
@@ -171,7 +177,7 @@ class ThresholdConfigScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Lưu ý: Chỉ chủ hộ mới có quyền thay đổi các ngưỡng bảo vệ này. Các thành viên khác sẽ nhận thông báo khi có điều chỉnh.',
+                    'Lưu ý: Chủ hộ có thể chỉnh các ngưỡng bảo vệ cho từng danh mục.',
                     style: AppTypography.bodySm
                         .copyWith(color: AppColors.onSurfaceVariant),
                   ),

@@ -60,8 +60,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 Text.rich(
                   TextSpan(
                     text: 'Gọn tài chính,\n',
-                    style: AppTypography.headlineLgMobile
-                        .copyWith(fontSize: 30, fontWeight: FontWeight.w700),
+                    style: IntroTypography.headline,
                     children: [
                       TextSpan(
                         text: 'vững tương lai',
@@ -75,6 +74,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 AppButton(
                   label: 'Bắt đầu ngay',
                   trailingIcon: Icons.arrow_forward,
+                  labelStyle: IntroTypography.title,
+                  trailingIconOffset: const Offset(0, 2),
                   onPressed: _getStarted,
                 ),
                 const SizedBox(height: 14),
@@ -109,7 +110,7 @@ class _ConsentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final base =
-        AppTypography.bodySm.copyWith(color: AppColors.onSurfaceVariant);
+        IntroTypography.small.copyWith(color: AppColors.onSurfaceVariant);
     return GestureDetector(
       onTap: () => onChanged(!value),
       child: Row(
@@ -128,7 +129,8 @@ class _ConsentRow extends StatelessWidget {
                 : null,
           ),
           const SizedBox(width: 8),
-          Text.rich(
+          Flexible(
+              child: Text.rich(
             TextSpan(
               text: 'Tôi đồng ý với ',
               style: base,
@@ -142,7 +144,7 @@ class _ConsentRow extends StatelessWidget {
                       'Chính sách bảo mật',
                       style: base.copyWith(
                         color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -152,14 +154,14 @@ class _ConsentRow extends StatelessWidget {
                   text: '',
                   style: base.copyWith(
                     color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     decoration: TextDecoration.underline,
                   ),
                 ),
                 const TextSpan(text: ' của FinNest'),
               ],
             ),
-          ),
+          )),
         ],
       ),
     );
