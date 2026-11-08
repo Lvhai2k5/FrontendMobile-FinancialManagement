@@ -12,3 +12,24 @@ String formatCurrency(num amount) {
   }
   return '${isNegative ? '-' : ''}$buffer';
 }
+
+/// Số rút gọn để đọc nhanh; số đầy đủ vẫn được giữ cho phần chi tiết.
+String formatCompactCurrency(num amount) {
+  final absolute = amount.abs();
+  if (absolute < 1000) return '${formatCurrency(amount)} đ';
+  final divisor = absolute >= 1000000000
+      ? 1000000000
+      : absolute >= 1000000
+          ? 1000000
+          : 1000;
+  final unit = divisor == 1000000000
+      ? 'tỷ'
+      : divisor == 1000000
+          ? 'triệu'
+          : 'nghìn';
+  final value = (amount / divisor)
+      .toStringAsFixed(2)
+      .replaceFirst(RegExp(r'\.?0+$'), '')
+      .replaceAll('.', ',');
+  return '$value $unit đ';
+}

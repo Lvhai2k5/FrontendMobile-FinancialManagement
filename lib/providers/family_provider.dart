@@ -1,32 +1,39 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../api/family_api.dart';
 import '../models/family_model.dart';
+import '../utils/api_error.dart';
 
-/// Logic + state cho nghiệp vụ Gia đình (`Family`/`Relationship`/
-/// `FinancialCategory`/`Threshold`). Backend chưa có endpoint tương ứng nên
-/// dữ liệu được seed sẵn tại đây thay vì gọi `api/` — giữ nguyên vai trò
-/// "nơi duy nhất chứa logic nghiệp vụ thật phía client" của lớp `providers/`,
-/// chỉ khác là chưa có HTTP call bên dưới. Khi Backend có API thật, thay
-/// phần seed bằng gọi `FamilyApi` mà không cần đổi cách `screens/` dùng
-/// provider này.
+/// State + logic gia đình/danh mục/hạn mức. Dữ liệu lấy từ Backend qua
+/// `FamilyApi`; `screens/` chỉ đọc state và gọi hành động ở đây.
 class FamilyProvider with ChangeNotifier {
-  FamilyProvider() {
-    _seed();
-  }
+  FamilyProvider({FamilyApi? api}) : _api = api ?? FamilyApi();
+
+  final FamilyApi _api;
 
   final List<FamilySummaryModel> _families = [];
   final Map<int, FamilyDetailModel> _details = {};
   final Map<int, List<ThresholdModel>> _thresholds = {};
-  int _selectedFamilyId = 1;
+  int? _selectedFamilyId;
+
+  int _loadVersion = 0;
+  bool loading = false;
+  String? errorMessage;
 
   List<FamilySummaryModel> get families => List.unmodifiable(_families);
+  int? get selectedFamilyId => _selectedFamilyId;
+  bool get hasFamily => _families.isNotEmpty;
 
-  int get selectedFamilyId => _selectedFamilyId;
+  FamilySummaryModel? get selectedFamily {
+    for (final f in _families) {
+      if (f.familyId == _selectedFamilyId) return f;
+    }
+    return null;
+  }
 
-  FamilySummaryModel get selectedFamily =>
-      _families.firstWhere((f) => f.familyId == _selectedFamilyId);
-
-  FamilyDetailModel detail(int familyId) => _details[familyId]!;
+  FamilyDetailModel? detail(int? familyId) =>
+      familyId == null ? null : _details[familyId];
 
   List<ThresholdModel> thresholdsOf(int categoryId) =>
       List.unmodifiable(_thresholds[categoryId] ?? const []);
@@ -37,6 +44,130 @@ class FamilyProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Tải lại toàn bộ danh sách gia đình + chi tiết (hũ, thành viên, số dư).
+  Future<void> load() async {
+    final version = ++_loadVersion;
+    loading = true;
+    errorMessage = null;
+    notifyListeners();
+    try {
+      final list = await _api.list();
+      final resolved = await Future.wait(list.map((f) async {
+        try {
+          return await _api.detail(f.familyId);
+        } on DioException catch (e) {
+          if (e.response?.statusCode == 403 || e.response?.statusCode == 404) {
+            return null;
+          }
+          rethrow;
+        }
+      }));
+      if (version != _loadVersion) return;
+      final details = resolved.whereType<FamilyDetailModel>();
+      final availableIds = details.map((d) => d.familyId).toSet();
+      _families
+        ..clear()
+        ..addAll(list.where((f) => availableIds.contains(f.familyId)));
+      _details
+        ..clear()
+        ..addEntries(details.map((d) => MapEntry(d.familyId, d)));
+      _thresholds.clear();
+      for (final d in details) {
+        for (final c in d.categories) {
+          _thresholds[c.financialCategoryId] = _thresholdsFrom(c);
+        }
+      }
+      if (_selectedFamilyId == null ||
+          !_families.any((f) => f.familyId == _selectedFamilyId)) {
+        _selectedFamilyId = _families.isEmpty ? null : _families.first.familyId;
+      }
+    } catch (e) {
+      if (version == _loadVersion) errorMessage = apiErrorMessage(e);
+    } finally {
+      if (version == _loadVersion) {
+        loading = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  /// Trả `null` nếu thành công, ngược lại là message lỗi.
+  Future<String?> createFamily(String name) async {
+    try {
+      final created = await _api.create(name);
+      await load();
+      _selectedFamilyId = created.familyId;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return apiErrorMessage(e);
+    }
+  }
+
+  Future<String?> joinFamily(String code) async {
+    try {
+      final joined = await _api.join(code);
+      await load();
+      _selectedFamilyId = joined.familyId;
+      notifyListeners();
+      return null;
+    } catch (e) {
+      return apiErrorMessage(e);
+    }
+  }
+
+  Future<String?> addMember(int familyId, String username) =>
+      _change(() => _api.addMember(familyId, username));
+
+  Future<String?> removeMember(int familyId, int personId) =>
+      _change(() => _api.removeMember(familyId, personId));
+
+  Future<String?> updatePermissions(
+          int familyId, int personId, Set<String> permissions) =>
+      _change(() => _api.updatePermissions(familyId, personId, permissions));
+
+  Future<String?> transferOwnership(int familyId, int personId) =>
+      _change(() => _api.transferOwnership(familyId, personId));
+
+  Future<String?> setCategoryLocked(int categoryId, bool locked) =>
+      _change(() => _api.setCategoryLocked(categoryId, locked));
+
+  Future<String?> _change(Future<void> Function() action) async {
+    try {
+      await action();
+      await load();
+      return errorMessage == null
+          ? null
+          : 'Đã lưu thay đổi. Hãy tải lại để xem dữ liệu mới.';
+    } catch (e) {
+      return apiErrorMessage(e);
+    }
+  }
+
+  Future<String?> createCategory(
+    int familyId, {
+    required String name,
+    required double initialBalance,
+    required double amountOfWarning,
+    required double amountOfEmergency,
+    required double amountOfApproval,
+  }) async {
+    try {
+      await _api.createCategory(familyId,
+          name: name,
+          initialBalance: initialBalance,
+          amountOfWarning: amountOfWarning,
+          amountOfEmergency: amountOfEmergency,
+          amountOfApproval: amountOfApproval);
+      await load();
+      return null;
+    } catch (e) {
+      return apiErrorMessage(e);
+    }
+  }
+
+  /// Sửa tạm trên máy trong lúc người dùng chỉnh; chỉ gửi lên Backend khi
+  /// gọi [saveThresholds].
   void updateThreshold(int categoryId, ThresholdType type,
       {double? amount, bool? enabled}) {
     final list = _thresholds[categoryId];
@@ -47,167 +178,51 @@ class FamilyProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void _seed() {
-    const minh = FamilyMemberModel(
-        personId: 1, name: 'Nguyễn Văn Minh', role: MemberRole.owner);
-    const lan = FamilyMemberModel(
-        personId: 2, name: 'Trần Thị Thu Lan', role: MemberRole.member);
-    const ngoc = FamilyMemberModel(
-        personId: 3, name: 'Nguyễn Bảo Ngọc', role: MemberRole.member);
-    const nguyen = FamilyMemberModel(
-        personId: 4, name: 'Nguyễn Khôi Nguyên', role: MemberRole.member);
-
-    final categories = [
-      const FinancialCategoryModel(
-        financialCategoryId: 101,
-        name: 'Nhu cầu thiết yếu',
-        allocationPercent: 55,
-        spent: 14200000,
-        limitAmount: 22000000,
-        status: CategoryStatus.active,
-      ),
-      const FinancialCategoryModel(
-        financialCategoryId: 102,
-        name: 'Giáo dục & con cái',
-        allocationPercent: 15,
-        spent: 5800000,
-        limitAmount: 8000000,
-        status: CategoryStatus.active,
-      ),
-      const FinancialCategoryModel(
-        financialCategoryId: 103,
-        name: 'Tiết kiệm dài hạn',
-        allocationPercent: 10,
-        spent: 35000000,
-        limitAmount: 40000000,
-        status: CategoryStatus.active,
-      ),
-      const FinancialCategoryModel(
-        financialCategoryId: 104,
-        name: 'Hưởng thụ & giải trí',
-        allocationPercent: 10,
-        spent: 3100000,
-        limitAmount: 4000000,
-        status: CategoryStatus.active,
-      ),
-      const FinancialCategoryModel(
-        financialCategoryId: 105,
-        name: 'Quỹ khẩn cấp & y tế',
-        allocationPercent: 5,
-        spent: 15000000,
-        limitAmount: 15000000,
-        status: CategoryStatus.locked,
-      ),
-      const FinancialCategoryModel(
-        financialCategoryId: 106,
-        name: 'Cho đi & biếu tặng',
-        allocationPercent: 5,
-        spent: 1500000,
-        limitAmount: 2000000,
-        status: CategoryStatus.active,
-      ),
-    ];
-
-    for (final category in categories) {
-      _thresholds[category.financialCategoryId] = [
-        const ThresholdModel(
-            type: ThresholdType.approve, amount: 2000000, enabled: true),
-        const ThresholdModel(
-            type: ThresholdType.warning, amount: 15000000, enabled: true),
-        const ThresholdModel(
-            type: ThresholdType.emergency, amount: 3000000, enabled: false),
-      ];
+  /// Ngưỡng bị tắt được lưu thành 0 (Backend không có cờ bật/tắt riêng).
+  Future<String?> saveThresholds(int categoryId) async {
+    final list = _thresholds[categoryId];
+    if (list == null) return 'Không tìm thấy danh mục';
+    double of(ThresholdType type) {
+      final t = list.firstWhere((t) => t.type == type);
+      return t.enabled ? t.amount : 0;
     }
 
-    _families.addAll([
-      FamilySummaryModel(
-        familyId: 1,
-        code: '#FN-204',
-        name: 'Gia đình Minh & Lan',
-        myRole: MemberRole.owner,
-        totalBudget: 66400000,
-        categoryCount: categories.length,
-        members: [minh, lan, ngoc, nguyen],
-      ),
-      const FamilySummaryModel(
-        familyId: 2,
-        code: '#FN-108',
-        name: 'Gia đình Bố Mẹ Nội',
-        myRole: MemberRole.member,
-        totalBudget: 28500000,
-        categoryCount: 3,
-        members: [
-          FamilyMemberModel(
-              personId: 5, name: 'Nguyễn Văn Bố', role: MemberRole.owner),
-          FamilyMemberModel(
-              personId: 6, name: 'Trần Thị Mẹ', role: MemberRole.member),
-        ],
-      ),
-      const FamilySummaryModel(
-        familyId: 3,
-        code: '#FN-315',
-        name: 'Gia đình Tiết Kiệm Anh Em',
-        myRole: MemberRole.member,
-        totalBudget: 45000000,
-        categoryCount: 2,
-        members: [
-          FamilyMemberModel(
-              personId: 7, name: 'Nguyễn Văn Anh', role: MemberRole.owner),
-          FamilyMemberModel(
-              personId: 8, name: 'Nguyễn Văn Em', role: MemberRole.member),
-        ],
-      ),
-    ]);
-
-    _details[1] = FamilyDetailModel(
-      familyId: 1,
-      code: '#FN-204',
-      name: 'Gia đình Minh & Lan',
-      myRole: MemberRole.owner,
-      totalBudget: 66400000,
-      budgetGrowthPercent: 12.5,
-      foundedLabel: 'Thành lập 03/2023',
-      members: [minh, lan, ngoc, nguyen],
-      categories: categories,
-      totalIncome: 48500000,
-      totalExpense: 30080000,
-    );
-
-    for (final summary in _families.skip(1)) {
-      final placeholderCategories = List.generate(
-        summary.categoryCount,
-        (i) => FinancialCategoryModel(
-          financialCategoryId: 200 + summary.familyId * 10 + i,
-          name: 'Danh mục ${i + 1}',
-          allocationPercent: (100 / summary.categoryCount).round(),
-          spent: summary.totalBudget * 0.4 / summary.categoryCount,
-          limitAmount: summary.totalBudget / summary.categoryCount,
-          status: CategoryStatus.active,
-        ),
-      );
-      for (final category in placeholderCategories) {
-        _thresholds[category.financialCategoryId] = [
-          const ThresholdModel(
-              type: ThresholdType.approve, amount: 2000000, enabled: true),
-          const ThresholdModel(
-              type: ThresholdType.warning, amount: 15000000, enabled: true),
-          const ThresholdModel(
-              type: ThresholdType.emergency, amount: 3000000, enabled: false),
-        ];
-      }
-      _details[summary.familyId] = FamilyDetailModel(
-        familyId: summary.familyId,
-        code: summary.code,
-        name: summary.name,
-        myRole: summary.myRole,
-        totalBudget: summary.totalBudget,
-        budgetGrowthPercent: 0,
-        foundedLabel: 'Thành lập 2023',
-        members: summary.members,
-        categories: placeholderCategories,
-        totalIncome: summary.totalBudget * 0.7,
-        totalExpense: summary.totalBudget * 0.45,
-      );
+    try {
+      await _api.updateThreshold(categoryId,
+          amountOfWarning: of(ThresholdType.warning),
+          amountOfEmergency: of(ThresholdType.emergency),
+          amountOfApproval: of(ThresholdType.approve));
+      await load();
+      return null;
+    } catch (e) {
+      return apiErrorMessage(e);
     }
   }
+
+  /// Xoá dữ liệu khi đăng xuất để tài khoản khác đăng nhập không thấy dữ liệu cũ.
+  void clear() {
+    _loadVersion++;
+    loading = false;
+    _families.clear();
+    _details.clear();
+    _thresholds.clear();
+    _selectedFamilyId = null;
+    errorMessage = null;
+    notifyListeners();
+  }
+
+  List<ThresholdModel> _thresholdsFrom(FinancialCategoryModel c) => [
+        ThresholdModel(
+            type: ThresholdType.approve,
+            amount: c.amountOfApproval,
+            enabled: c.amountOfApproval > 0),
+        ThresholdModel(
+            type: ThresholdType.warning,
+            amount: c.amountOfWarning,
+            enabled: c.amountOfWarning > 0),
+        ThresholdModel(
+            type: ThresholdType.emergency,
+            amount: c.amountOfEmergency,
+            enabled: c.amountOfEmergency > 0),
+      ];
 }

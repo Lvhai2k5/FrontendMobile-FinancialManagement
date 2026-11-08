@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../utils/api_error.dart';
+
 /// Loại thông báo hiển thị trên màn "Thông báo" — quyết định icon/màu, không
 /// phải enum nghiệp vụ trên diagram (Backend chưa có endpoint
 /// `/notifications`).
@@ -31,4 +33,18 @@ class NotificationModel {
   final String message;
   final String timeLabel;
   final bool actionable;
+
+  factory NotificationModel.fromJson(Map<String, dynamic> json) =>
+      NotificationModel(
+        id: asInt(json['id']),
+        kind: switch (json['kind']) {
+          'APPROVAL_REQUEST' => NotificationKind.approvalRequest,
+          'THRESHOLD_WARNING' => NotificationKind.thresholdWarning,
+          _ => NotificationKind.syncSuccess,
+        },
+        title: json['title'] as String? ?? '',
+        message: json['message'] as String? ?? '',
+        timeLabel: json['timeLabel'] as String? ?? '',
+        actionable: json['actionable'] == true,
+      );
 }

@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/common/brand_wordmark.dart';
 
 /// Màn hình đăng nhập — screen chỉ điều phối: giữ input UI (controller,
 /// ẩn/hiện mật khẩu), gọi `AuthProvider` khi submit, không tự gọi `api/`.
@@ -85,18 +86,14 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _Header(onBack: () => Navigator.of(context).maybePop()),
-              const SizedBox(height: 24),
-              Text(
-                'Chào mừng trở lại! 👋',
-                textAlign: TextAlign.center,
-                style: AppTypography.headlineLgMobile,
-              ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 56),
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                      color: AppColors.pastelBlush.withValues(alpha: 0.5)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.04),
@@ -157,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     _DividerWithLabel(label: 'Hoặc đăng nhập nhanh'),
                     const SizedBox(height: 24),
                     AppButton(
-                      label: 'Google',
+                      label: 'Tiếp tục với Google',
                       variant: AppButtonVariant.secondary,
                       leadingWidget: const _GoogleMark(),
                       onPressed: () => _showComingSoon('Đăng nhập Google'),
@@ -168,8 +165,10 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 32),
               Padding(
                 padding: const EdgeInsets.only(bottom: 24),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 4,
                   children: [
                     Text(
                       'Chưa có tài khoản để đăng nhập? ',
@@ -230,23 +229,7 @@ class _Header extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/images/logo.jpg',
-                    width: 32,
-                    height: 32,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'FinNest',
-                  style: AppTypography.headlineSm.copyWith(
-                    color: AppColors.secondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                const BrandWordmark(logoSize: 36, fontSize: 26),
               ],
             ),
           ),
@@ -330,26 +313,18 @@ class _DividerWithLabel extends StatelessWidget {
   }
 }
 
-/// Xấp xỉ logo Google 4 màu — không dùng SVG/asset ngoài để tránh thêm phụ
-/// thuộc chỉ cho 1 icon trang trí.
+/// Logo Google chính thức, đóng gói trong app để hiển thị cả khi offline.
 class _GoogleMark extends StatelessWidget {
   const _GoogleMark();
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
-      width: 16,
-      height: 16,
-      child: Text(
-        'G',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w800,
-          color: Color(0xFF4285F4),
-          height: 1.15,
-        ),
-      ),
+    return Image.asset(
+      'assets/images/google_logo.png',
+      width: 20,
+      height: 20,
+      fit: BoxFit.contain,
+      excludeFromSemantics: true,
     );
   }
 }

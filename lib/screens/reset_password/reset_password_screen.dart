@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
@@ -36,8 +38,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   void initState() {
     super.initState();
     _passwordController.addListener(() {
-      setState(() =>
-          _strength = evaluatePasswordStrength(_passwordController.text));
+      setState(
+          () => _strength = evaluatePasswordStrength(_passwordController.text));
     });
   }
 
@@ -58,7 +60,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     );
   }
 
-  void _handleSubmit() {
+  Future<void> _handleSubmit() async {
     final password = _passwordController.text;
     if (password.length < 8) {
       _showError('Mật khẩu cần tối thiểu 8 ký tự.');
@@ -66,6 +68,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     }
     if (password != _confirmController.text) {
       _showError('Xác nhận mật khẩu không khớp.');
+      return;
+    }
+
+    final error = await context.read<AuthProvider>().resetPassword(
+          email: widget.args.email,
+          newPassword: password,
+        );
+    if (!mounted) return;
+    if (error != null) {
+      _showError(error);
       return;
     }
 
@@ -92,7 +104,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
           child: Column(
             children: [
               const SizedBox(height: 48),
-              Text('Đặt lại mật khẩu 🔒', style: AppTypography.headlineLgMobile),
+              Text('Đặt lại mật khẩu 🔒',
+                  style: AppTypography.headlineLgMobile),
               const SizedBox(height: 8),
               Text(
                 'Tạo mật khẩu mới cho ${widget.args.email}',

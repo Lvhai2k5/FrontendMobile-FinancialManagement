@@ -72,15 +72,13 @@ class PasswordStrengthMeter extends StatelessWidget {
         ),
         if (strength != PasswordStrength.empty) ...[
           const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 12,
+            runSpacing: 4,
             children: [
-              Text('Tối thiểu 8 ký tự, gồm chữ và số',
-                  style: AppTypography.labelSm
-                      .copyWith(color: AppColors.outline)),
               Text('Độ mạnh: $_label',
-                  style:
-                      AppTypography.labelSm.copyWith(color: _color)),
+                  style: AppTypography.labelSm.copyWith(color: _color)),
             ],
           ),
         ],

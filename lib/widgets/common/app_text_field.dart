@@ -15,6 +15,8 @@ class AppTextField extends StatelessWidget {
     this.onToggleObscure,
     this.keyboardType,
     this.autofillHints,
+    this.validator,
+    this.fieldKey,
   });
 
   final String label;
@@ -25,6 +27,8 @@ class AppTextField extends StatelessWidget {
   final VoidCallback? onToggleObscure;
   final TextInputType? keyboardType;
   final Iterable<String>? autofillHints;
+  final FormFieldValidator<String>? validator;
+  final GlobalKey<FormFieldState<String>>? fieldKey;
 
   @override
   Widget build(BuildContext context) {
@@ -32,48 +36,62 @@ class AppTextField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: AppTypography.labelMd
+            style: AppTypography.titleSm
                 .copyWith(color: AppColors.onSurfaceVariant)),
         const SizedBox(height: 6),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: Row(
-            children: [
-              Icon(prefixIcon, size: 20, color: AppColors.outline),
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  obscureText: obscureText,
-                  keyboardType: keyboardType,
-                  autofillHints: autofillHints,
-                  style:
-                      AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
-                  decoration: InputDecoration(
-                    hintText: hintText,
-                    hintStyle: AppTypography.bodyMd.copyWith(
-                      color: AppColors.outline.withValues(alpha: 0.7),
+        TextFormField(
+          key: fieldKey,
+          controller: controller,
+          validator: validator,
+          autovalidateMode: validator == null
+              ? AutovalidateMode.disabled
+              : AutovalidateMode.onUserInteraction,
+          obscureText: obscureText,
+          autocorrect:
+              !obscureText && keyboardType != TextInputType.emailAddress,
+          enableSuggestions: !obscureText,
+          keyboardType: keyboardType,
+          autofillHints: autofillHints,
+          style: AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
+          decoration: InputDecoration(
+            hintText: hintText,
+            hintStyle: AppTypography.bodyMd.copyWith(color: AppColors.outline),
+            filled: true,
+            fillColor: AppColors.surfaceContainerLow,
+            prefixIcon: Icon(prefixIcon, size: 20, color: AppColors.primary),
+            suffixIcon: onToggleObscure == null
+                ? null
+                : IconButton(
+                    onPressed: onToggleObscure,
+                    icon: Icon(
+                      obscureText ? Icons.visibility : Icons.visibility_off,
+                      size: 20,
+                      color: AppColors.outline,
                     ),
-                    border: InputBorder.none,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                ),
-              ),
-              if (onToggleObscure != null)
-                IconButton(
-                  onPressed: onToggleObscure,
-                  icon: Icon(
-                    obscureText ? Icons.visibility : Icons.visibility_off,
-                    size: 20,
-                    color: AppColors.outline,
-                  ),
-                ),
-            ],
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide(
+                  color: AppColors.pastelBlush.withValues(alpha: 0.6)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+            ),
+            errorStyle: AppTypography.bodySm.copyWith(color: AppColors.error),
+            errorMaxLines: 3,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           ),
         ),
       ],

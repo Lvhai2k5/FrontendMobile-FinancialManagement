@@ -53,3 +53,6 @@ app.*.map.json
 key.properties
 google-services.json
 GoogleService-Info.plist
+
+# C?u h?nh bí m?t truy?n qua --dart-define-from-file
+/env.json

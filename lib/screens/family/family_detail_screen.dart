@@ -9,6 +9,8 @@ import '../../providers/transaction_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/format_currency.dart';
 import '../../widgets/family/category_progress_tile.dart';
+import 'family_actions.dart';
+import 'family_management_actions.dart';
 import 'threshold_config_screen.dart';
 
 /// Chi tiết 1 `Family`: thành viên (`Relationship`), danh mục tài chính
@@ -19,21 +21,30 @@ class FamilyDetailScreen extends StatelessWidget {
 
   final int familyId;
 
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature sẽ có ở bản cập nhật tiếp theo.'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.onSurface,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final family = context.watch<FamilyProvider>().detail(familyId);
-    final transactions =
-        context.watch<TransactionProvider>().transactions.take(5).toList();
+    final provider = context.watch<FamilyProvider>();
+    final family = provider.detail(familyId);
+    final transactions = context
+        .watch<TransactionProvider>()
+        .forFamily(familyId)
+        .take(5)
+        .toList();
+
+    if (family == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          title: const Text('Chi tiết gia đình'),
+        ),
+        body: Center(
+            child: provider.loading
+                ? const CircularProgressIndicator()
+                : const Text('Bạn không còn quyền truy cập tổ ấm này.')),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -44,8 +55,14 @@ class FamilyDetailScreen extends StatelessWidget {
         title: const Text('Chi tiết gia đình'),
         actions: [
           IconButton(
-            onPressed: () => _showComingSoon(context, 'Cài đặt gia đình'),
-            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Tải lại gia đình',
+            onPressed: provider.loading
+                ? null
+                : () => Future.wait([
+                      provider.load(),
+                      context.read<TransactionProvider>().load(),
+                    ]),
+            icon: const Icon(Icons.refresh),
           ),
         ],
       ),
@@ -63,66 +80,71 @@ class FamilyDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerLowest,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text('Bạn là ${family.myRole.label.toLowerCase()}',
-                      style: AppTypography.labelSm.copyWith(color: AppColors.primary)),
+                      style: AppTypography.labelSm
+                          .copyWith(color: AppColors.primary)),
                 ),
                 const SizedBox(height: 8),
                 Text(family.name, style: AppTypography.headlineLgMobile),
                 const SizedBox(height: 2),
-                Text(family.code,
-                    style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
                 const SizedBox(height: 12),
-                Text('TỔNG QUỸ CHUNG KHẢ DỤNG',
-                    style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
-                Row(
-                  children: [
-                    Text('${formatCurrency(family.totalBudget)} đ',
-                        style: AppTypography.brandTitle),
-                    const SizedBox(width: 8),
-                    if (family.budgetGrowthPercent > 0)
-                      Text('+${family.budgetGrowthPercent}%',
-                          style: AppTypography.labelMd.copyWith(color: AppColors.secondary)),
-                  ],
-                ),
+                if (family.canRead) ...[
+                  Text('TỔNG QUỸ CHUNG KHẢ DỤNG',
+                      style: AppTypography.labelSm
+                          .copyWith(color: AppColors.outline)),
+                  Row(
+                    children: [
+                      Text('${formatCurrency(family.totalBudget)} đ',
+                          style: AppTypography.brandTitle),
+                      const SizedBox(width: 8),
+                      if (family.budgetGrowthPercent > 0)
+                        Text('+${family.budgetGrowthPercent}%',
+                            style: AppTypography.labelMd
+                                .copyWith(color: AppColors.secondary)),
+                    ],
+                  ),
+                ] else
+                  Text('Bạn chưa có quyền Xem dữ liệu tài chính.',
+                      style: AppTypography.bodySm),
                 const SizedBox(height: 4),
                 Text(
-                    '${family.members.length} thành viên  ·  ${family.foundedLabel}',
-                    style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+                    '${family.members.length} thành viên${family.foundedLabel.isEmpty ? '' : '  ·  ${family.foundedLabel}'}',
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.outline)),
                 const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _QuickAction(
-                        icon: Icons.add_circle,
-                        label: 'Thêm giao dịch',
-                        filled: true,
-                        onTap: () => Navigator.of(context)
-                            .pushNamed(AppRoutes.transactionForm),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _QuickAction(
-                        icon: Icons.account_tree_outlined,
-                        label: 'Thêm danh mục',
-                        onTap: () => _showComingSoon(context, 'Thêm danh mục'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _QuickAction(
-                        icon: Icons.person_add_alt,
-                        label: 'Mời thêm',
-                        onTap: () => _showComingSoon(context, 'Mời thêm thành viên'),
-                      ),
-                    ),
-                  ],
-                ),
+                if (family.canWrite || family.isOwner)
+                  Row(
+                    children: [
+                      if (family.canWrite)
+                        Expanded(
+                          child: _QuickAction(
+                            icon: Icons.add_circle,
+                            label: 'Thêm giao dịch',
+                            filled: true,
+                            onTap: () => Navigator.of(context).pushNamed(
+                                AppRoutes.transactionForm,
+                                arguments: familyId),
+                          ),
+                        ),
+                      if (family.canWrite && family.isOwner)
+                        const SizedBox(width: 8),
+                      if (family.isOwner)
+                        Expanded(
+                          child: _QuickAction(
+                            icon: Icons.account_tree_outlined,
+                            label: 'Thêm danh mục',
+                            onTap: () =>
+                                promptCreateCategory(context, familyId),
+                          ),
+                        ),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -132,6 +154,23 @@ class FamilyDetailScreen extends StatelessWidget {
             title: 'Thành viên',
             child: Column(
               children: [
+                if (family.isOwner)
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      TextButton.icon(
+                        icon: const Icon(Icons.person_add_alt),
+                        onPressed: () => addFamilyMember(context, familyId),
+                        label: const Text('Thêm thành viên'),
+                      ),
+                      if (family.code.isNotEmpty)
+                        TextButton.icon(
+                          icon: const Icon(Icons.link),
+                          onPressed: () => showInviteCode(context, family.code),
+                          label: const Text('Mã mời'),
+                        ),
+                    ],
+                  ),
                 for (final member in family.members)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
@@ -146,10 +185,11 @@ class FamilyDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                            child: Text(member.name, style: AppTypography.bodyMd)),
+                            child:
+                                Text(member.name, style: AppTypography.bodyMd)),
                         Container(
-                          padding:
-                              const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
                             color: AppColors.surfaceContainerLow,
                             borderRadius: BorderRadius.circular(999),
@@ -158,6 +198,9 @@ class FamilyDetailScreen extends StatelessWidget {
                               style: AppTypography.labelSm
                                   .copyWith(color: AppColors.onSurfaceVariant)),
                         ),
+                        if (family.isOwner && member.role != MemberRole.owner)
+                          MemberManagementMenu(
+                              familyId: familyId, member: member),
                       ],
                     ),
                   ),
@@ -165,57 +208,124 @@ class FamilyDetailScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _SectionCard(
-            icon: Icons.pie_chart_outline,
-            title: 'Danh mục tài chính',
-            child: Column(
-              children: [
-                for (var i = 0; i < family.categories.length; i++)
-                  CategoryProgressTile(
-                    category: family.categories[i],
-                    index: i + 1,
-                    onTap: () => Navigator.of(context).pushNamed(
-                      AppRoutes.thresholdConfig,
-                      arguments: ThresholdConfigArgs(
-                        familyName: family.name,
-                        myRole: family.myRole,
-                        categoryId: family.categories[i].financialCategoryId,
-                        categoryName: family.categories[i].name,
-                      ),
+          if (family.canRead)
+            _SectionCard(
+              icon: Icons.pie_chart_outline,
+              title: 'Danh mục tài chính',
+              child: Column(
+                children: [
+                  for (var i = 0; i < family.categories.length; i++)
+                    Row(children: [
+                      Expanded(
+                          child: CategoryProgressTile(
+                        category: family.categories[i],
+                        index: i + 1,
+                        onTap: () => Navigator.of(context).pushNamed(
+                          AppRoutes.thresholdConfig,
+                          arguments: ThresholdConfigArgs(
+                            familyName: family.name,
+                            myRole: family.myRole,
+                            categoryId:
+                                family.categories[i].financialCategoryId,
+                            categoryName: family.categories[i].name,
+                          ),
+                        ),
+                      )),
+                      if (family.isOwner ||
+                          (family.canApprove &&
+                              family.categories[i].status ==
+                                  CategoryStatus.locked))
+                        _CategoryLockButton(
+                            category: CategoryAction(
+                          family.categories[i].financialCategoryId,
+                          family.categories[i].name,
+                          family.categories[i].status == CategoryStatus.locked,
+                        )),
+                    ]),
+                ],
+              ),
+            ),
+          if (!family.canRead && family.canApprove)
+            _SectionCard(
+              icon: Icons.lock_open_outlined,
+              title: 'Mở khóa danh mục',
+              child: Column(
+                children: [
+                  if (!family.actionCategories.any((c) => c.locked))
+                    const Text('Không có danh mục đang khóa.'),
+                  for (final category
+                      in family.actionCategories.where((c) => c.locked))
+                    ListTile(
+                      title: Text(category.name),
+                      trailing: _CategoryLockButton(
+                          category: category, showLabel: true),
+                    ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 16),
+          if (family.canRead)
+            _SectionCard(
+              icon: Icons.receipt_long_outlined,
+              title: 'Giao dịch gia đình',
+              child: Column(
+                children: [
+                  for (final t in transactions) _TransactionRow(transaction: t),
+                  const SizedBox(height: 4),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pushNamed(
+                          AppRoutes.familyTransactions,
+                          arguments: familyId),
+                      child: Text('Xem toàn bộ giao dịch tháng này →',
+                          style: AppTypography.labelMd
+                              .copyWith(color: AppColors.primary)),
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            icon: Icons.receipt_long_outlined,
-            title: 'Giao dịch gia đình',
-            child: Column(
-              children: [
-                for (final t in transactions) _TransactionRow(transaction: t),
-                const SizedBox(height: 4),
-                Center(
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context)
-                        .pushNamedAndRemoveUntil(AppRoutes.home, (r) => false),
-                    child: Text('Xem toàn bộ giao dịch tháng này →',
-                        style:
-                            AppTypography.labelMd.copyWith(color: AppColors.primary)),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
+class _CategoryLockButton extends StatelessWidget {
+  const _CategoryLockButton({required this.category, this.showLabel = false});
+
+  final CategoryAction category;
+  final bool showLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    if (showLabel) {
+      return Tooltip(
+        message: 'Mở khóa ${category.name}',
+        child: TextButton.icon(
+          icon: const Icon(Icons.lock_open_outlined),
+          onPressed: () => changeCategoryLock(context, category),
+          label: const Text('Mở khóa'),
+        ),
+      );
+    }
+    return IconButton(
+      tooltip: category.locked
+          ? 'Mở khóa ${category.name}'
+          : 'Khóa ${category.name}',
+      icon:
+          Icon(category.locked ? Icons.lock_open_outlined : Icons.lock_outline),
+      onPressed: () => changeCategoryLock(context, category),
+    );
+  }
+}
+
 class _QuickAction extends StatelessWidget {
   const _QuickAction(
-      {required this.icon, required this.label, required this.onTap, this.filled = false});
+      {required this.icon,
+      required this.label,
+      required this.onTap,
+      this.filled = false});
 
   final IconData icon;
   final String label;
@@ -235,12 +345,13 @@ class _QuickAction extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icon, size: 18, color: filled ? Colors.white : AppColors.primary),
+            Icon(icon,
+                size: 18, color: filled ? Colors.white : AppColors.primary),
             const SizedBox(height: 4),
             Text(label,
                 textAlign: TextAlign.center,
-                style: AppTypography.labelSm
-                    .copyWith(color: filled ? Colors.white : AppColors.onSurfaceVariant)),
+                style: AppTypography.labelSm.copyWith(
+                    color: filled ? Colors.white : AppColors.onSurfaceVariant)),
           ],
         ),
       ),
@@ -249,7 +360,8 @@ class _QuickAction extends StatelessWidget {
 }
 
 class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.icon, required this.title, required this.child});
+  const _SectionCard(
+      {required this.icon, required this.title, required this.child});
 
   final IconData icon;
   final String title;
@@ -313,7 +425,8 @@ class _TransactionRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(transaction.status.label,
-                style: AppTypography.labelSm.copyWith(color: AppColors.onSurfaceVariant)),
+                style: AppTypography.labelSm
+                    .copyWith(color: AppColors.onSurfaceVariant)),
           ),
         ],
       ),

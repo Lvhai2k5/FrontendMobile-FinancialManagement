@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
+import 'home_tab_header.dart';
 
 class BottomNavItemData {
   const BottomNavItemData({required this.icon, required this.label});
@@ -34,7 +35,9 @@ class BottomNavBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 64,
+          height: 78 +
+              (MediaQuery.textScalerOf(context).scale(16) - 16).clamp(0, 32) *
+                  2,
           child: Row(
             children: List.generate(items.length, (index) {
               final selected = index == currentIndex;
@@ -42,36 +45,54 @@ class BottomNavBar extends StatelessWidget {
               return Expanded(
                 child: InkWell(
                   onTap: () => onTap(index),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? AppColors.primary
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Icon(
-                          item.icon,
-                          size: 22,
-                          color: selected
-                              ? Colors.white
-                              : AppColors.onSurfaceVariant,
-                        ),
+                  child: Center(
+                    child: AnimatedContainer(
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 160),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? HomeTabColors.sageTint
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(20),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.label,
-                        style: AppTypography.labelSm.copyWith(
-                          color: selected
-                              ? AppColors.primary
-                              : AppColors.onSurfaceVariant,
-                        ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            item.icon,
+                            size: 22,
+                            color: selected
+                                ? HomeTabColors.sage
+                                : AppColors.onSurfaceVariant,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item.label,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            style: AppTypography.labelSm.copyWith(
+                              color: selected
+                                  ? HomeTabColors.sage
+                                  : AppColors.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Container(
+                            width: 18,
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? HomeTabColors.coral
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               );

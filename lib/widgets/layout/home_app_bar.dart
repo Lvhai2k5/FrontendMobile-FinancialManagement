@@ -4,11 +4,15 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/notification_provider.dart';
 import '../../routes/app_routes.dart';
+import '../common/brand_wordmark.dart';
+import 'home_tab_header.dart';
 
 /// Thanh app bar dùng chung cho 4 tab chính: logo + tên thương hiệu bên
 /// trái, chuông thông báo bên phải (điều hướng sang màn Thông báo).
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const HomeAppBar({super.key});
+  const HomeAppBar({super.key, this.emphasizeBrand = false});
+
+  final bool emphasizeBrand;
 
   @override
   Widget build(BuildContext context) {
@@ -21,16 +25,15 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset('assets/images/logo.jpg',
-                  width: 28, height: 28, fit: BoxFit.cover),
-            ),
-            const SizedBox(width: 8),
-            Text('FinNest',
-                style: AppTypography.headlineSm
-                    .copyWith(color: AppColors.secondary)),
-            const Spacer(),
+            Expanded(
+                child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: BrandWordmark(
+                            logoSize: emphasizeBrand ? 38 : 32,
+                            fontSize: emphasizeBrand ? 26 : 22,
+                            wordmarkColor: HomeTabColors.coral)))),
             Material(
               color: AppColors.surfaceContainerLowest,
               shape: const CircleBorder(),
@@ -70,5 +73,5 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(52);
+  Size get preferredSize => Size.fromHeight(emphasizeBrand ? 64 : 52);
 }

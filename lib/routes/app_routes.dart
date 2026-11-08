@@ -7,15 +7,22 @@ import '../screens/home/home_shell_screen.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/otp/otp_verify_screen.dart';
+import '../screens/profile/edit_profile_screen.dart';
+import '../screens/profile/support_feedback_screen.dart';
 import '../screens/register/register_screen.dart';
 import '../screens/reset_password/reset_password_screen.dart';
 import '../screens/transaction/transaction_form_screen.dart';
+import '../screens/transaction/transaction_list_tab.dart';
 import '../screens/welcome/welcome_screen.dart';
 
 /// Bản đồ tên route ↔ Screen. Thêm route mới ở đây khi thêm screen mới,
 /// không điều hướng bằng `MaterialPageRoute` rải rác trong `screens/`.
 class AppRoutes {
   AppRoutes._();
+
+  /// Dùng để điều hướng từ ngoài widget tree (ví dụ khi phiên đăng nhập hết hạn).
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   static const String welcome = '/';
   static const String login = '/login';
@@ -28,6 +35,9 @@ class AppRoutes {
   static const String thresholdConfig = '/threshold-config';
   static const String notifications = '/notifications';
   static const String transactionForm = '/transaction-form';
+  static const String familyTransactions = '/family-transactions';
+  static const String editProfile = '/edit-profile';
+  static const String supportFeedback = '/support-feedback';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -63,9 +73,22 @@ class AppRoutes {
         );
       case notifications:
         return MaterialPageRoute(builder: (_) => const NotificationsScreen());
+      case familyTransactions:
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('Giao dịch gia đình')),
+            body: TransactionListTab(familyId: settings.arguments as int),
+          ),
+        );
       case transactionForm:
         return MaterialPageRoute(
-            builder: (_) => const TransactionFormScreen());
+          builder: (_) =>
+              TransactionFormScreen(familyId: settings.arguments as int?),
+        );
+      case editProfile:
+        return MaterialPageRoute(builder: (_) => const EditProfileScreen());
+      case supportFeedback:
+        return MaterialPageRoute(builder: (_) => const SupportFeedbackScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
