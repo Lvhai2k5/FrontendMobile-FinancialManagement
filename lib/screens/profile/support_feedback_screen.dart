@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
+import '../../widgets/common/inline_picker.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/family_provider.dart';
 import '../../providers/transaction_provider.dart';
@@ -213,17 +214,11 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
                 ],
               ),
               _label('Giao dịch hoặc nội dung gặp sự cố *'),
-              DropdownButtonFormField<String>(
+              InlinePicker<String>(
+                placeholder: 'Chọn giao dịch/sự cố',
                 value: _issue,
-                isExpanded: true,
-                decoration: _fieldDecoration('Chọn giao dịch/sự cố'),
-                items: [
-                  for (final i in issues)
-                    DropdownMenuItem(
-                        value: i,
-                        child: Text(i, overflow: TextOverflow.ellipsis)),
-                ],
-                onChanged: (v) => setState(() => _issue = v),
+                options: {for (final issue in issues) issue: issue},
+                onChanged: (value) => setState(() => _issue = value),
               ),
               _label('Nội dung phản ánh *',
                   trailing: '${_contentController.text.length}/$_maxLength'),

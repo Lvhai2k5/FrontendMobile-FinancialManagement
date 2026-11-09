@@ -34,7 +34,7 @@ void main() {
     final all = find.widgetWithText(ChoiceChip, 'Tất cả (1)');
     final transactions = find.widgetWithText(ChoiceChip, 'Giao dịch (0)');
     final thresholds = find.widgetWithText(ChoiceChip, 'Hạn mức (1)');
-    final warning = find.text('Cảnh báo hạn mức hũ');
+    final warning = find.text('Cảnh báo hạn mức danh mục');
     final empty = find.text('Không có thông báo mới.');
     expect(warning, findsOneWidget);
 

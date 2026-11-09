@@ -6,11 +6,13 @@ import '../../models/transaction_model.dart';
 import '../../providers/family_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../utils/format_currency.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
+import '../../widgets/common/inline_picker.dart';
 
 /// "Nhập thủ công" — cách duy nhất tạo `Transaction` thật (3 kênh còn lại ở
-/// tab Giao dịch chưa có trong phạm vi Backend). Danh mục (hũ) lấy từ gia
+/// tab Giao dịch chưa có trong phạm vi Backend). Danh mục lấy từ gia
 /// đình đang chọn; Backend quyết định giao dịch được ghi nhận ngay hay phải
 /// chờ Chủ hộ duyệt (vượt ngưỡng cần duyệt).
 class TransactionFormScreen extends StatefulWidget {
@@ -56,8 +58,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
 
   Future<void> _handleSubmit() async {
     final content = _contentController.text.trim();
-    final amount = double.tryParse(
-        _amountController.text.replaceAll('.', '').replaceAll(',', ''));
+    final amount = parseCurrencyInput(_amountController.text);
     if (_saving) return;
     if (content.isEmpty ||
         amount == null ||
@@ -69,7 +70,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
       return;
     }
     if (_categoryId == null) {
-      _showMessage('Vui lòng chọn danh mục (hũ).', error: true);
+      _showMessage('Vui lòng chọn danh mục.', error: true);
       return;
     }
 
@@ -143,55 +144,19 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 style: AppTypography.titleSm
                     .copyWith(color: AppColors.onSurfaceVariant)),
             const SizedBox(height: 8),
-            Semantics(
-              label: 'Tổ ấm',
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: AppColors.pastelBlush.withValues(alpha: 0.6)),
-                ),
-                child: DropdownButton<int>(
-                  value: familyId,
-                  hint: const Text('Chọn tổ ấm'),
-                  isExpanded: true,
-                  menuMaxHeight: 320,
-                  itemHeight: null,
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  underline: const SizedBox.shrink(),
-                  icon: const Icon(Icons.keyboard_arrow_down),
-                  iconEnabledColor: AppColors.primary,
-                  dropdownColor: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  style:
-                      AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
-                  items: [
-                    for (final family in families)
-                      DropdownMenuItem(
-                        value: family.familyId,
-                        child: Text(family.name),
-                      ),
-                  ],
-                  selectedItemBuilder: (_) => [
-                    for (final family in families)
-                      Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child:
-                            Text(family.name, overflow: TextOverflow.ellipsis),
-                      ),
-                  ],
-                  onChanged: _saving
-                      ? null
-                      : (id) {
-                          if (id == null || id == familyId) return;
-                          setState(() {
-                            _familyId = id;
-                            _categoryId = null;
-                          });
-                        },
-                ),
-              ),
+            InlinePicker<int>(
+              placeholder: 'Chọn tổ ấm',
+              value: familyId,
+              options: {for (final f in families) f.familyId: f.name},
+              onChanged: _saving
+                  ? null
+                  : (id) {
+                      if (id == familyId) return;
+                      setState(() {
+                        _familyId = id;
+                        _categoryId = null;
+                      });
+                    },
             ),
             const SizedBox(height: 16),
             if (familyId == null)
@@ -236,6 +201,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 hintText: '0',
                 prefixIcon: Icons.payments_outlined,
                 keyboardType: TextInputType.number,
+                inputFormatters: const [CurrencyInputFormatter()],
               ),
               const SizedBox(height: 16),
               Text('Danh mục',
@@ -244,7 +210,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
               const SizedBox(height: 8),
               if (categories.isEmpty)
                 _InfoBox(
-                    'Gia đình này chưa có danh mục (hũ). Chủ hộ hãy thêm danh mục ở màn Chi tiết gia đình.')
+                    'Gia đình này chưa có danh mục. Chủ hộ hãy thêm danh mục ở màn Chi tiết gia đình.')
               else
                 Wrap(
                   spacing: 8,

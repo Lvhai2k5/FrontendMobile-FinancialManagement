@@ -5,6 +5,7 @@ import 'package:finance_management/providers/family_provider.dart';
 import 'package:finance_management/providers/notification_provider.dart';
 import 'package:finance_management/providers/transaction_provider.dart';
 import 'package:finance_management/screens/transaction/transaction_form_screen.dart';
+import 'package:finance_management/widgets/common/inline_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,6 +47,7 @@ class _Families extends FamilyProvider {
 
 class _Transactions extends TransactionProvider {
   int? submittedCategoryId;
+  double? submittedAmount;
 
   @override
   Future<({TransactionModel? created, String? error, bool queued})>
@@ -56,6 +58,7 @@ class _Transactions extends TransactionProvider {
     required TransactionType type,
   }) async {
     submittedCategoryId = financialCategoryId;
+    submittedAmount = amount;
     return (created: null, error: null, queued: true);
   }
 }
@@ -71,7 +74,8 @@ FamilySummaryModel _family(int id) => FamilySummaryModel(
     );
 
 Future<void> _open(WidgetTester tester, List<FamilySummaryModel> families,
-    _Transactions transactions, {double width = 390, double scale = 1}) async {
+    _Transactions transactions,
+    {double width = 390, double scale = 1}) async {
   tester.view.physicalSize = Size(width, 844);
   tester.view.devicePixelRatio = 1;
   tester.platformDispatcher.textScaleFactorTestValue = scale;
@@ -80,7 +84,8 @@ Future<void> _open(WidgetTester tester, List<FamilySummaryModel> families,
   addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
   await tester.pumpWidget(MultiProvider(
     providers: [
-      ChangeNotifierProvider<FamilyProvider>(create: (_) => _Families(families)),
+      ChangeNotifierProvider<FamilyProvider>(
+          create: (_) => _Families(families)),
       ChangeNotifierProvider<TransactionProvider>(create: (_) => transactions),
       ChangeNotifierProvider<NotificationProvider>(
           create: (_) => NotificationProvider()),
@@ -114,14 +119,15 @@ void main() {
     await font.load();
   });
 
-  testWidgets('Hiện tên tổ ấm duy nhất và dùng thang chữ chung', (tester) async {
+  testWidgets('Hiện tên tổ ấm duy nhất và dùng thang chữ chung',
+      (tester) async {
     await _open(tester, [_family(1)], _Transactions(), width: 320, scale: 1.3);
 
     expect(find.text('Tổ ấm'), findsOneWidget);
     expect(find.text('Nhà 1'), findsOneWidget);
     expect(find.text('Hũ 1'), findsOneWidget);
-    final dropdown = tester.widget<DropdownButton<int>>(
-        find.byType(DropdownButton<int>));
+    final dropdown =
+        tester.widget<InlinePicker<int>>(find.byType(InlinePicker<int>));
     expect(dropdown.value, 1);
     expect(dropdown.onChanged, isNotNull);
     final context = tester.element(find.text('Nhập thủ công'));
@@ -136,22 +142,25 @@ void main() {
     }
   });
 
-  testWidgets('Đổi tổ ấm bỏ hũ cũ và lưu theo hũ của tổ ấm mới', (tester) async {
+  testWidgets('Đổi tổ ấm bỏ hũ cũ và lưu theo hũ của tổ ấm mới',
+      (tester) async {
     final transactions = _Transactions();
     await _open(tester, List.generate(12, (i) => _family(i + 1)), transactions);
 
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'Mua rau');
-    await tester.enterText(fields.at(1), '50000');
+    await tester.enterText(fields.at(1), '10000');
+    expect(
+        tester.widget<TextFormField>(fields.at(1)).controller!.text, '10.000');
     await tester.tap(find.text('Hũ 1'));
     await tester.pumpAndSettle();
     expect(find.text('Nhà 2'), findsNothing);
-    await tester.tap(find.byType(DropdownButton<int>));
+    final inputY = tester.getTopLeft(fields.first).dy;
+    final picker = find.byType(InlinePicker<int>);
+    await tester.tap(find.descendant(of: picker, matching: find.text('Nhà 1')));
     await tester.pumpAndSettle();
-    final menu = find.ancestor(
-      of: find.widgetWithText(DropdownMenuItem<int>, 'Nhà 1'),
-      matching: find.byType(Scrollable),
-    );
+    expect(tester.getTopLeft(fields.first).dy, greaterThan(inputY));
+    final menu = find.descendant(of: picker, matching: find.byType(Scrollable));
     await tester.drag(menu, const Offset(0, -500));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Nhà 12'));
@@ -163,7 +172,7 @@ void main() {
     expect(tester.widget<ChoiceChip>(newCategory).selected, isFalse);
     await tester.tap(find.text('Lưu giao dịch'));
     await tester.pumpAndSettle();
-    expect(find.text('Vui lòng chọn danh mục (hũ).'), findsOneWidget);
+    expect(find.text('Vui lòng chọn danh mục.'), findsOneWidget);
     expect(transactions.submittedCategoryId, isNull);
 
     await tester.tap(newCategory);
@@ -171,5 +180,6 @@ void main() {
     await tester.tap(find.text('Lưu giao dịch'));
     await tester.pumpAndSettle();
     expect(transactions.submittedCategoryId, 120);
+    expect(transactions.submittedAmount, 10000);
   });
 }

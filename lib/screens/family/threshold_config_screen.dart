@@ -100,7 +100,7 @@ class ThresholdConfigScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Thiết lập 3 ngưỡng kiểm soát tài chính cho hũ "${args.categoryName}".',
+                        'Thiết lập 3 ngưỡng kiểm soát tài chính cho danh mục "${args.categoryName}".',
                         style: AppTypography.labelSm
                             .copyWith(color: AppColors.outline),
                       ),
@@ -307,11 +307,10 @@ class _ThresholdCard extends StatelessWidget {
                           title: amountLabel,
                           hint: 'Nhập số tiền (đ)',
                           keyboardType: TextInputType.number,
-                          initialValue: threshold.amount.round().toString(),
+                          initialValue: formatCurrency(threshold.amount),
+                          inputFormatters: const [CurrencyInputFormatter()],
                         );
-                        final parsed = double.tryParse((value ?? '')
-                            .replaceAll('.', '')
-                            .replaceAll(',', ''));
+                        final parsed = parseCurrencyInput(value ?? '');
                         if (parsed != null && parsed >= 0) {
                           onAmountChanged(parsed);
                         }

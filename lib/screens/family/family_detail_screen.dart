@@ -214,34 +214,31 @@ class FamilyDetailScreen extends StatelessWidget {
               title: 'Danh mục tài chính',
               child: Column(
                 children: [
-                  for (var i = 0; i < family.categories.length; i++)
-                    Row(children: [
-                      Expanded(
-                          child: CategoryProgressTile(
-                        category: family.categories[i],
-                        index: i + 1,
-                        onTap: () => Navigator.of(context).pushNamed(
-                          AppRoutes.thresholdConfig,
-                          arguments: ThresholdConfigArgs(
-                            familyName: family.name,
-                            myRole: family.myRole,
-                            categoryId:
-                                family.categories[i].financialCategoryId,
-                            categoryName: family.categories[i].name,
-                          ),
+                  for (final (index, category) in family.categories.indexed)
+                    CategoryProgressTile(
+                      category: category,
+                      index: index + 1,
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.thresholdConfig,
+                        arguments: ThresholdConfigArgs(
+                          familyName: family.name,
+                          myRole: family.myRole,
+                          categoryId: category.financialCategoryId,
+                          categoryName: category.name,
                         ),
-                      )),
-                      if (family.isOwner ||
-                          (family.canApprove &&
-                              family.categories[i].status ==
-                                  CategoryStatus.locked))
-                        _CategoryLockButton(
-                            category: CategoryAction(
-                          family.categories[i].financialCategoryId,
-                          family.categories[i].name,
-                          family.categories[i].status == CategoryStatus.locked,
-                        )),
-                    ]),
+                      ),
+                      trailing: family.isOwner ||
+                              (family.canApprove &&
+                                  category.status == CategoryStatus.locked)
+                          ? _CategoryLockButton(
+                              category: CategoryAction(
+                                category.financialCategoryId,
+                                category.name,
+                                category.status == CategoryStatus.locked,
+                              ),
+                            )
+                          : null,
+                    ),
                 ],
               ),
             ),

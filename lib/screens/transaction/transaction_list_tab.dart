@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
+import '../../widgets/common/compact_date_range_dialog.dart';
 import '../../widgets/layout/home_tab_header.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/family_provider.dart';
@@ -9,6 +10,13 @@ import '../../providers/transaction_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/format_currency.dart';
 import 'offline_queue_panel.dart';
+
+typedef _SearchOptions = ({DateTimeRange? range, TransactionType? type});
+
+String _rangeLabel(BuildContext context, DateTimeRange range) {
+  final date = MaterialLocalizations.of(context).formatCompactDate;
+  return '${date(range.start)} – ${date(range.end)}';
+}
 
 /// Tab "Giao dịch" — 4 cách tạo giao dịch (chỉ "Nhập thủ công" hoạt động
 /// thật, 3 kênh còn lại chưa có trong phạm vi Backend hiện tại, xem
@@ -26,6 +34,7 @@ class TransactionListTab extends StatefulWidget {
 class _TransactionListTabState extends State<TransactionListTab> {
   final _searchController = TextEditingController();
   late int _filterIndex = widget.familyId == null ? 0 : 3;
+  _SearchOptions _options = (range: null, type: null);
 
   static const _filters = ['Tất cả', 'Hôm nay', 'Tuần này', 'Tháng này'];
 
@@ -45,7 +54,22 @@ class _TransactionListTabState extends State<TransactionListTab> {
     );
   }
 
+  Future<void> _openSearchOptions() async {
+    FocusScope.of(context).unfocus();
+    final options = await showDialog<_SearchOptions>(
+      context: context,
+      builder: (_) => _TransactionSearchDialog(initial: _options),
+    );
+    if (mounted && options != null) setState(() => _options = options);
+  }
+
   List<TransactionModel> _applyFilter(List<TransactionModel> items) {
+    if (_options.range case final range?) {
+      return items.where((t) {
+        final day = DateUtils.dateOnly(t.createdAt.toLocal());
+        return !day.isBefore(range.start) && !day.isAfter(range.end);
+      }).toList();
+    }
     final now = DateTime.now();
     bool sameDay(DateTime d) =>
         d.year == now.year && d.month == now.month && d.day == now.day;
@@ -90,9 +114,10 @@ class _TransactionListTabState extends State<TransactionListTab> {
     final now = DateTime.now();
     final query = _searchController.text.trim().toLowerCase();
     final filtered = _applyFilter(all).where((transaction) =>
-        query.isEmpty ||
-        transaction.content.toLowerCase().contains(query) ||
-        transaction.categoryName.toLowerCase().contains(query));
+        (_options.type == null || transaction.type == _options.type) &&
+        (query.isEmpty ||
+            transaction.content.toLowerCase().contains(query) ||
+            transaction.categoryName.toLowerCase().contains(query)));
 
     final groups = <String, List<TransactionModel>>{};
     for (final t in filtered) {
@@ -114,7 +139,6 @@ class _TransactionListTabState extends State<TransactionListTab> {
               if (widget.familyId == null) ...[
                 const HomeTabHeader(
                     title: 'Giao dịch',
-                    subtitle: 'Thu chi của tổ ấm',
                     artwork: HomeTabArtwork.transactions,
                     icon: Icons.receipt_long_outlined),
                 Text('Phương thức tạo giao dịch',
@@ -157,8 +181,8 @@ class _TransactionListTabState extends State<TransactionListTab> {
                     ),
                     _MethodCard(
                       icon: Icons.center_focus_weak,
-                      fill: HomeTabColors.sageTint,
-                      ink: HomeTabColors.sage,
+                      fill: AppColors.pastelLavender,
+                      ink: const Color(0xFF604675),
                       title: 'Quét đồ vật',
                       onTap: () => _showComingSoon('Quét đồ vật'),
                     ),
@@ -195,7 +219,16 @@ class _TransactionListTabState extends State<TransactionListTab> {
                         ),
                       ),
                     ),
-                    Icon(Icons.tune, size: 18, color: AppColors.outline),
+                    IconButton(
+                      tooltip: 'Tùy biến tìm kiếm giao dịch',
+                      onPressed: _openSearchOptions,
+                      icon: Badge(
+                        isLabelVisible:
+                            _options.range != null || _options.type != null,
+                        child: const Icon(Icons.tune, size: 18),
+                      ),
+                      color: AppColors.onSurfaceVariant,
+                    ),
                   ],
                 ),
               ),
@@ -209,18 +242,37 @@ class _TransactionListTabState extends State<TransactionListTab> {
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
                         label: Text(_filters[i]),
-                        selected: _filterIndex == i,
-                        onSelected: (_) => setState(() => _filterIndex = i),
+                        selected: _options.range == null && _filterIndex == i,
+                        onSelected: (_) => setState(() {
+                          _filterIndex = i;
+                          _options = (range: null, type: _options.type);
+                        }),
                         selectedColor: HomeTabColors.sageTint,
                         backgroundColor: AppColors.surfaceContainerLowest,
                         labelStyle: AppTypography.labelSm.copyWith(
-                            color: _filterIndex == i
+                            color: _options.range == null && _filterIndex == i
                                 ? HomeTabColors.sage
                                 : AppColors.onSurfaceVariant),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999)),
                         side: BorderSide.none,
                       ),
+                    ),
+                  if (_options.range case final range?)
+                    InputChip(
+                      label: Text(_rangeLabel(context, range)),
+                      onDeleted: () => setState(() {
+                        _options = (range: null, type: _options.type);
+                      }),
+                    ),
+                  if (_options.type case final type?)
+                    InputChip(
+                      label: Text(type == TransactionType.income
+                          ? 'Thu nhập'
+                          : 'Chi tiêu'),
+                      onDeleted: () => setState(() {
+                        _options = (range: _options.range, type: null);
+                      }),
                     ),
                 ],
               ),
@@ -283,6 +335,95 @@ class _TransactionListTabState extends State<TransactionListTab> {
           ),
         ));
   }
+}
+
+class _TransactionSearchDialog extends StatefulWidget {
+  const _TransactionSearchDialog({required this.initial});
+
+  final _SearchOptions initial;
+
+  @override
+  State<_TransactionSearchDialog> createState() =>
+      _TransactionSearchDialogState();
+}
+
+class _TransactionSearchDialogState extends State<_TransactionSearchDialog> {
+  late DateTimeRange? _range = widget.initial.range;
+  late TransactionType? _type = widget.initial.type;
+
+  Future<void> _pickRange() async {
+    final range = await showDateRangePicker(
+      context: context,
+      initialDateRange: _range,
+      firstDate: DateTime(1900),
+      lastDate: DateUtils.dateOnly(DateTime.now()),
+      helpText: 'Chọn khoảng ngày',
+      cancelText: 'Hủy',
+      saveText: 'Chọn khoảng này',
+      confirmText: 'Chọn khoảng này',
+      switchToInputEntryModeIcon: const Icon(Icons.edit_calendar_outlined),
+      builder: compactDateRangeDialog,
+    );
+    if (mounted && range != null) setState(() => _range = range);
+  }
+
+  @override
+  Widget build(BuildContext context) => Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Tùy biến tìm kiếm', style: AppTypography.headlineSm),
+              const SizedBox(height: 16),
+              Text('Khoảng thời gian', style: AppTypography.titleSm),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _pickRange,
+                icon: const Icon(Icons.calendar_month_outlined),
+                label: Text(_range == null
+                    ? 'Chọn khoảng ngày'
+                    : _rangeLabel(context, _range!)),
+              ),
+              const SizedBox(height: 16),
+              Text('Loại giao dịch', style: AppTypography.titleSm),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final (type, label)
+                      in const <(TransactionType?, String)>[
+                    (null, 'Tất cả loại'),
+                    (TransactionType.income, 'Thu nhập'),
+                    (TransactionType.expense, 'Chi tiêu'),
+                  ])
+                    ChoiceChip(
+                      label: Text(label),
+                      selected: _type == type,
+                      onSelected: (_) => setState(() => _type = type),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => Navigator.of(context)
+                    .pop<_SearchOptions>((range: _range, type: _type)),
+                child: const Text('Áp dụng bộ lọc'),
+              ),
+              TextButton(
+                onPressed: () => setState(() {
+                  _range = null;
+                  _type = null;
+                }),
+                child: const Text('Đặt lại'),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class _MethodCard extends StatelessWidget {

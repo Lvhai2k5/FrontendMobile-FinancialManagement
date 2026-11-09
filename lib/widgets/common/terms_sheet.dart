@@ -29,7 +29,7 @@ class _TermsSheetState extends State<_TermsSheet> {
   static const _terms = <(String, String)>[
     (
       'Nguyên tắc quản trị tổ ấm & Tài khoản',
-      'FinNest phân định rõ quyền hạn giữa Chủ hộ (phân bổ quỹ gia đình, thiết lập 6 hũ chi tiêu, duyệt định mức) và Thành viên (nhập hóa đơn hàng ngày, gửi yêu cầu chi). Mọi thành viên cam kết dữ liệu thu chi ghi chép trung thực phục vụ lợi ích chung của gia đình.'
+      'FinNest phân định rõ quyền hạn giữa Chủ hộ (phân bổ quỹ gia đình, thiết lập 6 danh mục chi tiêu, duyệt định mức) và Thành viên (nhập hóa đơn hàng ngày, gửi yêu cầu chi). Mọi thành viên cam kết dữ liệu thu chi ghi chép trung thực phục vụ lợi ích chung của gia đình.'
     ),
     (
       'Bảo mật dữ liệu tài chính đa tầng',

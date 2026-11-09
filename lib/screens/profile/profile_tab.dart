@@ -14,7 +14,9 @@ import '../../routes/app_routes.dart';
 /// Tab "Người dùng" — hồ sơ cá nhân, gia đình đang tham gia, tài khoản &
 /// bảo mật, đăng xuất. Thiết kế theo `finnest_tab_ng_i_d_ng`.
 class ProfileTab extends StatelessWidget {
-  const ProfileTab({super.key});
+  const ProfileTab({super.key, required this.onEditProfile});
+
+  final VoidCallback onEditProfile;
 
   void _showComingSoon(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -54,7 +56,6 @@ class ProfileTab extends StatelessWidget {
         children: [
           const HomeTabHeader(
               title: 'Người dùng',
-              subtitle: 'Bạn và những tổ ấm của mình',
               artwork: HomeTabArtwork.profile,
               icon: Icons.groups_outlined),
           Container(
@@ -135,8 +136,7 @@ class ProfileTab extends StatelessWidget {
                       side: const BorderSide(color: HomeTabColors.sage),
                       minimumSize: const Size(0, 48),
                     ),
-                    onPressed: () =>
-                        Navigator.of(context).pushNamed(AppRoutes.editProfile),
+                    onPressed: onEditProfile,
                   ),
                 ),
               ],
@@ -216,28 +216,6 @@ class ProfileTab extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _MenuTile(
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: 'Cấu hình danh mục tài chính',
-                  subtitle: 'Tùy chỉnh 6 hũ chi tiêu và ngân sách',
-                  onTap: families.isEmpty
-                      ? () {}
-                      : () => Navigator.of(context).pushNamed(
-                          AppRoutes.familyDetail,
-                          arguments: families.first.familyId),
-                ),
-                const Divider(height: 1),
-                _MenuTile(
-                  icon: Icons.diversity_3,
-                  title: 'Cấu hình gia đình',
-                  subtitle: 'Quản lý thành viên và quyền hạn tổ ấm',
-                  onTap: families.isEmpty
-                      ? () {}
-                      : () => Navigator.of(context).pushNamed(
-                          AppRoutes.familyDetail,
-                          arguments: families.first.familyId),
-                ),
-                const Divider(height: 1),
                 _MenuTile(
                   icon: Icons.lock_reset,
                   title: 'Thay đổi mật khẩu',

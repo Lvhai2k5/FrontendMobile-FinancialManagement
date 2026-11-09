@@ -22,78 +22,114 @@ class OverviewBalanceCard extends StatelessWidget {
   final bool reportAvailable;
 
   @override
-  Widget build(BuildContext context) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: HomeTabColors.border),
-            borderRadius: BorderRadius.circular(18)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: HomeTabColors.peachTint,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child:
-                  const Icon(Icons.home_outlined, color: HomeTabColors.coral),
+  Widget build(BuildContext context) {
+    final members = family.members.take(3).toList();
+    const avatarRadius = 13.0;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: HomeTabColors.border),
+          borderRadius: BorderRadius.circular(18)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: HomeTabColors.peachTint,
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(width: 10),
-            Expanded(child: Text(family.name, style: AppTypography.titleSm)),
-            const SizedBox(width: 8),
-            Text(family.myRole.label,
-                style:
-                    AppTypography.labelSm.copyWith(color: HomeTabColors.sage)),
-          ]),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
+            child: const Icon(Icons.home_outlined, color: HomeTabColors.coral),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(family.name, style: AppTypography.titleSm)),
+          const SizedBox(width: 8),
+          Text(family.myRole.label,
+              style: AppTypography.labelSm.copyWith(color: HomeTabColors.sage)),
+        ]),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            if (members.isNotEmpty)
+              SizedBox(
+                width: avatarRadius * (members.length + 1),
+                height: avatarRadius * 2,
+                child: Stack(
+                  children: [
+                    for (final (index, member) in members.indexed)
+                      PositionedDirectional(
+                        start: index * avatarRadius,
+                        child: CircleAvatar(
+                          radius: avatarRadius,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: avatarRadius - 1,
+                            backgroundColor: const [
+                              HomeTabColors.peachTint,
+                              HomeTabColors.wheatTint,
+                              HomeTabColors.sageTint,
+                            ][index],
+                            child: Align(
+                              alignment: index == members.length - 1
+                                  ? AlignmentDirectional.center
+                                  : const AlignmentDirectional(-0.75, 0),
+                              child: Text(member.initials,
+                                  style: AppTypography.labelSm),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            if (family.members.length > 3)
+              Text('+${family.members.length - 3}',
+                  style: AppTypography.labelSm),
+            Text('${family.members.length} thành viên',
+                style: AppTypography.bodySm),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+              color: HomeTabColors.neutral,
+              borderRadius: BorderRadius.circular(10)),
+          child: Row(
             children: [
-              for (final (index, member) in family.members.take(3).indexed)
-                CircleAvatar(
-                    radius: 13,
-                    backgroundColor: const [
-                      HomeTabColors.peachTint,
-                      HomeTabColors.wheatTint,
-                      HomeTabColors.sageTint
-                    ][index],
-                    child: Text(member.initials, style: AppTypography.labelSm)),
-              if (family.members.length > 3)
-                Text('+${family.members.length - 3}',
-                    style: AppTypography.labelSm),
-              Text('${family.members.length} thành viên',
-                  style: AppTypography.bodySm),
+              Expanded(
+                child: FittedBox(
+                  alignment: AlignmentDirectional.centerStart,
+                  fit: BoxFit.scaleDown,
+                  child: Text('Số dư hiện tại', style: AppTypography.bodySm),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FittedBox(
+                  alignment: AlignmentDirectional.centerEnd,
+                  fit: BoxFit.scaleDown,
+                  child: Text('${formatCurrency(family.totalBudget)} đ',
+                      style: AppTypography.amountMd),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-                color: HomeTabColors.neutral,
-                borderRadius: BorderRadius.circular(10)),
-            child: Row(children: [
-              Expanded(
-                  child: Text('Số dư hiện tại', style: AppTypography.bodySm)),
-              const SizedBox(width: 8),
-              Flexible(
-                  flex: 2,
-                  child: Text('${formatCurrency(family.totalBudget)} đ',
-                      textAlign: TextAlign.end,
-                      style: AppTypography.amountMd)),
-            ]),
-          ),
-          const SizedBox(height: 12),
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(child: _stat('Thu trong kỳ', summary.income, '+')),
-            const SizedBox(width: 8),
-            Expanded(child: _stat('Chi trong kỳ', summary.expense, '−')),
-          ]),
+        ),
+        const SizedBox(height: 12),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(child: _stat('Thu trong kỳ', summary.income, '+')),
+          const SizedBox(width: 8),
+          Expanded(child: _stat('Chi trong kỳ', summary.expense, '−')),
         ]),
-      );
+      ]),
+    );
+  }
 
   Widget _stat(String label, double value, String sign) => Container(
       padding: const EdgeInsets.all(10),
@@ -367,7 +403,7 @@ class OverviewJars extends StatelessWidget {
                           : 'Ngưỡng khẩn cấp: Đã tắt'),
                       const SizedBox(height: 12),
                       const Text(
-                          'Số liệu hũ là tổng đã chi do hệ thống ghi nhận, không phụ thuộc bộ lọc ngày báo cáo.'),
+                          'Số liệu danh mục là tổng đã chi do hệ thống ghi nhận, không phụ thuộc bộ lọc ngày báo cáo.'),
                     ]))));
   }
 
@@ -380,14 +416,10 @@ class OverviewJars extends StatelessWidget {
     final alertColor =
         hasRed ? AppColors.error : CategoryUsageStatus.warning.color;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Phân bổ dòng tiền',
-          style:
-              AppTypography.headlineSm.copyWith(fontWeight: FontWeight.w700)),
-      const SizedBox(height: 4),
-      Text('${categories.length} hũ chi tiêu · Số tiền rút gọn',
+      Text('${categories.length} danh mục chi tiêu · Số tiền rút gọn',
           style: AppTypography.bodySm),
       const SizedBox(height: 6),
-      Text('Tổng đã chi của hũ · Không theo bộ lọc ngày',
+      Text('Tổng đã chi của danh mục · Không theo bộ lọc ngày',
           style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
       const SizedBox(height: 12),
       if (categories.isNotEmpty) ...[
@@ -418,7 +450,7 @@ class OverviewJars extends StatelessWidget {
                           size: 22, color: status.color),
                       const SizedBox(height: 3),
                       Text(
-                        '${status.label}\n${statuses.where((value) => value == status).length} hũ',
+                        '${status.label}\n${statuses.where((value) => value == status).length} danh mục',
                         textAlign: TextAlign.center,
                         style:
                             AppTypography.labelSm.copyWith(color: status.color),
@@ -448,7 +480,7 @@ class OverviewJars extends StatelessWidget {
                   child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                    Text('$warningCount hũ cần chú ý',
+                    Text('$warningCount danh mục cần chú ý',
                         style:
                             AppTypography.labelMd.copyWith(color: alertColor)),
                     const SizedBox(height: 6),
@@ -476,14 +508,14 @@ class OverviewJars extends StatelessWidget {
             if (categories.isEmpty)
               const Padding(
                   padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text('Tổ ấm chưa có hũ chi tiêu.')),
+                  child: Text('Tổ ấm chưa có danh mục chi tiêu.')),
             for (var i = 0; i < categories.length; i++) ...[
               if (i > 0)
                 const Divider(height: 1, color: AppColors.surfaceContainer),
               _jar(context, categories[i]),
             ],
             if (categories.isNotEmpty)
-              Text('Chạm vào hũ để xem số tiền đầy đủ →',
+              Text('Chạm vào danh mục để xem số tiền đầy đủ →',
                   style:
                       AppTypography.bodySm.copyWith(color: AppColors.outline)),
           ])),

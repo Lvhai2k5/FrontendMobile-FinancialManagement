@@ -32,7 +32,6 @@ class FamilyListTab extends StatelessWidget {
                       children: [
                     const HomeTabHeader(
                         title: 'Gia đình',
-                        subtitle: 'Cùng vun vén những điều quan trọng',
                         icon: Icons.groups_outlined),
                     Container(
                         width: double.infinity,
@@ -270,7 +269,7 @@ class _FamilyCard extends StatelessWidget {
                                           style: AppTypography.amountMd.copyWith(
                                               color: AppColors.onSurface));
                                       final jars = Text(
-                                          '${family.categoryCount} hũ chi tiêu',
+                                          '${family.categoryCount} danh mục tài chính',
                                           style: AppTypography.bodySm.copyWith(
                                               color: AppColors.onSurface));
                                       if (constraints.maxWidth < 300 ||

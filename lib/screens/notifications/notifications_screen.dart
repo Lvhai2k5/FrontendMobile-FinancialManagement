@@ -151,6 +151,15 @@ class _NotificationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isThresholdWarning =
+        notification.kind == NotificationKind.thresholdWarning;
+    final title =
+        isThresholdWarning && notification.title == 'Cảnh báo hạn mức hũ'
+            ? 'Cảnh báo hạn mức danh mục'
+            : notification.title;
+    final message = isThresholdWarning && notification.message.startsWith('Hũ ')
+        ? notification.message.replaceFirst('Hũ ', 'Danh mục ')
+        : notification.message;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -175,16 +184,14 @@ class _NotificationCard extends StatelessWidget {
                     size: 16, color: AppColors.primary),
               ),
               const SizedBox(width: 10),
-              Expanded(
-                  child:
-                      Text(notification.title, style: AppTypography.titleSm)),
+              Expanded(child: Text(title, style: AppTypography.titleSm)),
               Text(notification.timeLabel,
                   style:
                       AppTypography.labelSm.copyWith(color: AppColors.outline)),
             ],
           ),
           const SizedBox(height: 8),
-          Text(notification.message,
+          Text(message,
               style: AppTypography.bodySm
                   .copyWith(color: AppColors.onSurfaceVariant)),
           if (notification.actionable) ...[

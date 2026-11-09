@@ -2,24 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
 
-/// Logo + chữ "FinNest" (Fin đen, Nest nâu đỏ) dùng ở đầu các màn hình.
+/// Logo + chữ "FinNest" (Fin đen, Nest cam) dùng ở đầu các màn hình.
 class BrandWordmark extends StatelessWidget {
   const BrandWordmark({
     super.key,
     this.logoSize = 40,
     this.fontSize = 26,
-    this.wordmarkColor,
   });
 
   final double logoSize;
   final double fontSize;
-  final Color? wordmarkColor;
 
   @override
   Widget build(BuildContext context) {
     final style = AppTypography.brandTitle.copyWith(
       fontSize: fontSize,
-      color: wordmarkColor,
+      color: Colors.black,
     );
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -51,8 +49,7 @@ class BrandWordmark extends StatelessWidget {
             children: [
               TextSpan(
                   text: 'Nest',
-                  style: style.copyWith(
-                      color: wordmarkColor ?? AppColors.primary)),
+                  style: style.copyWith(color: const Color(0xFFC45D25))),
             ],
           ),
         ),
