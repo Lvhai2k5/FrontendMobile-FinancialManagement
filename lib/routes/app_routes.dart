@@ -13,6 +13,7 @@ import '../screens/register/register_screen.dart';
 import '../screens/reset_password/reset_password_screen.dart';
 import '../screens/transaction/transaction_form_screen.dart';
 import '../screens/transaction/transaction_list_tab.dart';
+import '../screens/transaction/transaction_voice_screen.dart';
 import '../screens/welcome/welcome_screen.dart';
 
 /// Bản đồ tên route ↔ Screen. Thêm route mới ở đây khi thêm screen mới,
@@ -35,6 +36,8 @@ class AppRoutes {
   static const String thresholdConfig = '/threshold-config';
   static const String notifications = '/notifications';
   static const String transactionForm = '/transaction-form';
+  static const String transactionFormPrefilled = '/transaction-form-prefilled';
+  static const String transactionVoice = '/transaction-voice';
   static const String familyTransactions = '/family-transactions';
   static const String editProfile = '/edit-profile';
   static const String supportFeedback = '/support-feedback';
@@ -84,6 +87,17 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) =>
               TransactionFormScreen(familyId: settings.arguments as int?),
+        );
+      case transactionFormPrefilled:
+        final args = settings.arguments as TransactionFormArgs;
+        return MaterialPageRoute(
+          builder: (_) => TransactionFormScreen(
+              familyId: args.familyId, prefill: args.prefill),
+        );
+      case transactionVoice:
+        return MaterialPageRoute(
+          builder: (_) =>
+              TransactionVoiceScreen(familyId: settings.arguments as int?),
         );
       case editProfile:
         return MaterialPageRoute(builder: (_) => const EditProfileScreen());

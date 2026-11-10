@@ -177,7 +177,11 @@ class _TransactionListTabState extends State<TransactionListTab> {
                       fill: HomeTabColors.peachTint,
                       ink: HomeTabColors.coral,
                       title: 'Ghi âm giọng nói',
-                      onTap: () => _showComingSoon('Ghi âm giọng nói'),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.transactionVoice,
+                        arguments:
+                            context.read<FamilyProvider>().selectedFamilyId,
+                      ),
                     ),
                     _MethodCard(
                       icon: Icons.center_focus_weak,

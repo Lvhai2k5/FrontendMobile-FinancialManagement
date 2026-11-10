@@ -43,5 +43,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>FinNest dùng micro để ghi chi tiêu bằng giọng nói.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>FinNest nhận diện giọng nói để điền sẵn giao dịch cho bạn xác nhận.</string>
 </dict>
 </plist>

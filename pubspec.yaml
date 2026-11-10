@@ -45,6 +45,8 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   # Font Outfit + Plus Jakarta Sans theo design system
   google_fonts: ^6.3.3
+  # Ghi chi tiêu bằng giọng nói: STT native tiếng Việt trên thiết bị
+  speech_to_text: ^7.4.0
 
 dev_dependencies:
   flutter_test:
