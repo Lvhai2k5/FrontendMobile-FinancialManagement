@@ -96,8 +96,8 @@ class _CustomizeReportSheetState extends State<CustomizeReportSheet> {
                   Expanded(
                     child: _ChartOptionCard(
                       icon: Icons.pie_chart_outline,
-                      title: 'Biểu đồ tròn 6 hũ',
-                      subtitle: 'Phân bổ chi tiêu chi tiết theo 6 lọ tài chính',
+                      title: 'Biểu đồ tròn 6 danh mục',
+                      subtitle: 'Phân bổ chi tiêu chi tiết theo 6 danh mục tài chính',
                       selected: _chartIndex == 1,
                       onTap: () => setState(() => _chartIndex = 1),
                     ),

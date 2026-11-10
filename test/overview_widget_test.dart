@@ -25,7 +25,12 @@ const _family = FamilyDetailModel(
   totalBudget: 61830000,
   budgetGrowthPercent: 0,
   foundedLabel: '',
-  members: [],
+  members: [
+    FamilyMemberModel(personId: 1, name: 'Minh', role: MemberRole.owner),
+    FamilyMemberModel(personId: 2, name: 'Lan', role: MemberRole.member),
+    FamilyMemberModel(personId: 3, name: 'Nam', role: MemberRole.member),
+    FamilyMemberModel(personId: 4, name: 'An', role: MemberRole.member),
+  ],
   totalIncome: 48500000,
   totalExpense: 77670000,
   categories: [
@@ -240,6 +245,18 @@ void main() {
     await open(tester);
     expect(find.text('Số dư hiện tại'), findsOneWidget);
     expect(find.text('61.830.000 đ'), findsOneWidget);
+    final balanceLabel = tester.getCenter(find.text('Số dư hiện tại'));
+    final balanceAmount = tester.getCenter(find.text('61.830.000 đ'));
+    expect(balanceLabel.dx, lessThan(balanceAmount.dx));
+    expect(balanceLabel.dy, closeTo(balanceAmount.dy, 1));
+    double avatarX(String initial) => tester
+        .getCenter(find.ancestor(
+          of: find.text(initial),
+          matching: find.byType(CircleAvatar),
+        ).first)
+        .dx;
+    expect(avatarX('L') - avatarX('M'), closeTo(13, 1));
+    expect(find.text('+1'), findsOneWidget);
     expect(find.text('+48,5 triệu đ'), findsOneWidget);
     expect(find.text('−77,67 triệu đ'), findsOneWidget);
     expect(find.text('Thu – chi theo tuần'), findsOneWidget);
@@ -273,6 +290,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(DateRangePickerDialog), findsOneWidget);
     expect(find.text('Chọn khoảng thời gian'), findsOneWidget);
+    final popup = tester.getRect(find.byType(DateRangePickerDialog));
+    expect(popup.height, lessThan(560));
+    expect(popup.left, greaterThan(0));
     await capture(tester, 'overview-calendar');
     // Hủy không đổi bộ lọc.
     Navigator.of(tester.element(find.byType(DateRangePickerDialog))).pop();
@@ -307,7 +327,7 @@ void main() {
     await capture(tester, 'overview-large-text');
     await tester.tap(find.byTooltip('Đổi kỳ báo cáo'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Tháng này'));
+    await tester.tap(find.text('Tháng này').last);
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Đổi kỳ báo cáo'));
     await tester.pumpAndSettle();
@@ -347,7 +367,7 @@ void main() {
     await open(tester);
     await tester.tap(find.byTooltip('Thay đổi tổ ấm'));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(ListView, 'Chọn tổ ấm'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Tổ ấm thứ hai'), findsOneWidget);
     await tester.tap(find.text('Tổ ấm thứ hai'));
     await tester.pumpAndSettle();
     expect(
@@ -355,7 +375,7 @@ void main() {
             of: find.byType(OverviewBalanceCard), matching: find.text('123 đ')),
         findsOneWidget);
     expect(find.text('+48,5 triệu đ'), findsNothing);
-    expect(find.text('0 hũ chi tiêu · Số tiền rút gọn'), findsOneWidget);
+    expect(find.text('0 danh mục chi tiêu · Số tiền rút gọn'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

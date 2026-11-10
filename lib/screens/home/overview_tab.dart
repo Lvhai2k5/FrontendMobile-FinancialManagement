@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
+import '../../widgets/common/compact_date_range_dialog.dart';
+import '../../widgets/common/inline_picker.dart';
 import '../../widgets/layout/home_tab_header.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/family_provider.dart';
@@ -38,47 +40,13 @@ class _OverviewTabState extends State<OverviewTab> {
       confirmText: 'Áp dụng',
       cancelText: 'Hủy',
       switchToInputEntryModeIcon: const Icon(Icons.edit_calendar_outlined),
-      builder: (context, child) => Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 720),
-          child:
-              ClipRRect(borderRadius: BorderRadius.circular(24), child: child),
-        ),
-      ),
+      builder: compactDateRangeDialog,
     );
     if (!mounted || picked == null) return;
     setState(() {
       _range = picked;
       _period = OverviewPeriod.custom;
     });
-  }
-
-  void _openFamilyPicker(FamilyProvider provider) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-          child: ListView(
-        shrinkWrap: true,
-        children: [
-          Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text('Chọn tổ ấm', style: AppTypography.titleSm)),
-          for (final family in provider.families)
-            ListTile(
-              leading: const Icon(Icons.home_outlined),
-              title: Text(family.name),
-              trailing: family.familyId == provider.selectedFamilyId
-                  ? const Icon(Icons.check)
-                  : null,
-              onTap: () {
-                provider.selectFamily(family.familyId);
-                Navigator.pop(context);
-              },
-            ),
-        ],
-      )),
-    );
   }
 
   void _showTransactions(OverviewSummary summary) {
@@ -150,31 +118,37 @@ class _OverviewTabState extends State<OverviewTab> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const HomeTabHeader(
               title: 'Tổng quan',
-              subtitle: 'Cùng chăm chút quỹ chung',
               artwork: HomeTabArtwork.overview,
               icon: Icons.home_outlined),
-          if (!family.canRead) ...[
-            OutlinedButton.icon(
-              onPressed: () => _openFamilyPicker(families),
-              icon: const Icon(Icons.home_outlined),
-              label: const Text('Chọn tổ ấm'),
+          Tooltip(
+            message: 'Thay đổi tổ ấm',
+            child: InlinePicker<int>(
+              prominent: true,
+              placeholder: 'Chọn tổ ấm',
+              value: families.selectedFamilyId,
+              options: {for (final f in families.families) f.familyId: f.name},
+              onChanged: families.selectFamily,
             ),
-            const SizedBox(height: 12),
+          ),
+          const SizedBox(height: 8),
+          if (!family.canRead)
             Text('Bạn chưa có quyền Xem dữ liệu của tổ ấm này.',
-                style: AppTypography.bodyMd),
-          ] else ...[
-            Wrap(spacing: 10, runSpacing: 10, children: [
-              ActionChip(
-                  avatar: const Icon(Icons.home_outlined, size: 18),
-                  label: const Text('Chọn tổ ấm'),
-                  backgroundColor: Colors.white,
-                  side: const BorderSide(color: HomeTabColors.sage),
-                  tooltip: 'Thay đổi tổ ấm',
-                  onPressed: () => _openFamilyPicker(families)),
-              PopupMenuButton<OverviewPeriod>(
-                tooltip: 'Đổi kỳ báo cáo',
-                initialValue: _period,
-                onSelected: (period) {
+                style: AppTypography.bodyMd)
+          else ...[
+            Tooltip(
+              message: 'Đổi kỳ báo cáo',
+              child: InlinePicker<OverviewPeriod>(
+                prominent: true,
+                placeholder: 'Chọn kỳ',
+                value: _period,
+                options: const {
+                  OverviewPeriod.thisMonth: 'Tháng này',
+                  OverviewPeriod.lastMonth: 'Tháng trước',
+                  OverviewPeriod.thisYear: 'Năm nay',
+                  OverviewPeriod.lastYear: 'Năm trước',
+                  OverviewPeriod.custom: 'Tùy biến',
+                },
+                onChanged: (period) {
                   if (period == OverviewPeriod.custom) {
                     _pickDates();
                   } else {
@@ -184,27 +158,8 @@ class _OverviewTabState extends State<OverviewTab> {
                     });
                   }
                 },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                      value: OverviewPeriod.thisMonth,
-                      child: Text('Tháng này')),
-                  PopupMenuItem(
-                      value: OverviewPeriod.lastMonth,
-                      child: Text('Tháng trước')),
-                  PopupMenuItem(
-                      value: OverviewPeriod.thisYear, child: Text('Năm nay')),
-                  PopupMenuItem(
-                      value: OverviewPeriod.lastYear, child: Text('Năm trước')),
-                  PopupMenuItem(
-                      value: OverviewPeriod.custom, child: Text('Tùy biến')),
-                ],
-                child: Chip(
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: HomeTabColors.sage),
-                    avatar: const Icon(Icons.calendar_month_outlined, size: 18),
-                    label: const Text('Chọn kỳ')),
               ),
-            ]),
+            ),
             const SizedBox(height: 4),
             TextButton.icon(
                 key: const ValueKey('overview-date-range'),
@@ -230,37 +185,69 @@ class _OverviewTabState extends State<OverviewTab> {
                     padding: EdgeInsets.only(bottom: 12),
                     child:
                         Text('Chưa có giao dịch đã duyệt trong khoảng này.')),
-              OverviewFlowChart(
+              _OverviewSection(
+                title: 'Biểu đồ thu chi',
+                initiallyExpanded: true,
+                child: OverviewFlowChart(
                   buckets: overviewBuckets(
                       transactions.transactions, family.familyId, _range),
-                  onDetails: () => _showTransactions(summary)),
+                  onDetails: () => _showTransactions(summary),
+                ),
+              ),
               const SizedBox(height: 8),
-              ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
-                  title: Text('So sánh với kỳ trước',
-                      style: AppTypography.titleSm),
-                  children: [
-                    _ReportComparisonCard(
-                        income: summary.income,
-                        expense: summary.expense,
-                        net: summary.net,
-                        previous: previous,
-                        earlier: earlier,
-                        onDetails: () => _showTransactions(summary))
-                  ]),
+              _OverviewSection(
+                title: 'So sánh với kỳ trước',
+                child: _ReportComparisonCard(
+                    income: summary.income,
+                    expense: summary.expense,
+                    net: summary.net,
+                    previous: previous,
+                    earlier: earlier,
+                    onDetails: () => _showTransactions(summary)),
+              ),
             ],
-            const SizedBox(height: 20),
-            OverviewJars(categories: family.categories),
-            const SizedBox(height: 20),
-            Text('Đánh giá & dự đoán tài chính gia đình',
-                style: AppTypography.headlineSm),
             const SizedBox(height: 12),
-            _ForecastCard(balance: family.totalBudget, expense: month.expense),
+            _OverviewSection(
+              title: 'Phân bổ dòng tiền',
+              initiallyExpanded: true,
+              child: OverviewJars(categories: family.categories),
+            ),
+            const SizedBox(height: 12),
+            _OverviewSection(
+              title: 'Đánh giá & dự đoán tài chính gia đình',
+              initiallyExpanded: true,
+              child: _ForecastCard(
+                  balance: family.totalBudget, expense: month.expense),
+            ),
           ],
         ]),
       ),
     );
   }
+}
+
+class _OverviewSection extends StatelessWidget {
+  const _OverviewSection({
+    required this.title,
+    required this.child,
+    this.initiallyExpanded = false,
+  });
+
+  final String title;
+  final Widget child;
+  final bool initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) => ExpansionTile(
+        key: PageStorageKey(title),
+        initiallyExpanded: initiallyExpanded,
+        tilePadding: EdgeInsets.zero,
+        expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+        shape: const Border(),
+        collapsedShape: const Border(),
+        title: Text(title, style: AppTypography.titleSm),
+        children: [child],
+      );
 }
 
 class _ReportComparisonCard extends StatelessWidget {

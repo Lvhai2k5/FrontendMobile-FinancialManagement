@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:finance_management/config/theme.dart';
 import 'package:finance_management/models/family_model.dart';
 import 'package:finance_management/models/transaction_model.dart';
+import 'package:finance_management/models/user_model.dart';
 import 'package:finance_management/providers/auth_provider.dart';
 import 'package:finance_management/providers/family_provider.dart';
 import 'package:finance_management/providers/notification_provider.dart';
@@ -17,6 +18,7 @@ import 'package:finance_management/routes/app_routes.dart';
 import 'package:finance_management/screens/family/family_list_tab.dart';
 import 'package:finance_management/screens/family/family_detail_screen.dart';
 import 'package:finance_management/screens/home/home_shell_screen.dart';
+import 'package:finance_management/screens/profile/edit_profile_screen.dart';
 import 'package:finance_management/widgets/common/brand_wordmark.dart';
 import 'package:finance_management/widgets/layout/home_app_bar.dart';
 import 'package:finance_management/widgets/layout/bottom_nav_bar.dart';
@@ -87,9 +89,9 @@ class Families extends FamilyProvider {
   }
 
   @override
-  Future<String?> createFamily(String name) async {
+  Future<({int? familyId, String? error})> createFamily(String name) async {
     created = name;
-    return null;
+    return (familyId: 99, error: null);
   }
 
   @override
@@ -117,8 +119,20 @@ class Notifications extends NotificationProvider {
 }
 
 class User extends UserProvider {
+  ({String name, String phone, String email})? saved;
+
   @override
   Future<void> load() async {}
+
+  @override
+  Future<String?> updateProfile({
+    required String name,
+    required String phone,
+    required String email,
+  }) async {
+    saved = (name: name, phone: phone, email: email);
+    return null;
+  }
 }
 
 class Session extends AuthProvider {
@@ -148,6 +162,72 @@ void main() {
     await (FontLoader('MaterialIcons')
           ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf')))
         .load();
+  });
+
+  testWidgets('Hồ sơ kiểm tra dữ liệu và ở lại màn chỉnh sửa sau khi lưu',
+      (tester) async {
+    final user = User()
+      ..user = const UserModel(
+        personId: 1,
+        username: 'test-user',
+        name: 'Nguyễn An',
+        email: 'an@example.com',
+        phone: '0912345678',
+        role: 'USER',
+      );
+    await tester.pumpWidget(ChangeNotifierProvider<UserProvider>(
+      create: (_) => user,
+      child: MaterialApp(
+        theme: AppTheme.light,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () =>
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const EditProfileScreen(),
+              )),
+              child: const Text('Mở hồ sơ'),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('Mở hồ sơ'));
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextFormField);
+    final save = find.text('Lưu thay đổi');
+    expect(fields, findsNWidgets(3));
+    expect(find.text('Ngày sinh'), findsNothing);
+    expect(find.text('Họ và tên (*)'), findsOneWidget);
+    expect(find.text('Bắt buộc (*)'), findsNothing);
+    expect(find.textContaining('qua email.'), findsNothing);
+    await tester.enterText(fields.at(0), 'An 123');
+    await tester.enterText(fields.at(1), '123');
+    await tester.enterText(fields.at(2), 'an@other.example');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(user.saved, isNull);
+    expect(find.textContaining('Nhập họ tên bằng chữ'), findsOneWidget);
+    expect(find.textContaining('Số điện thoại cần đúng'), findsOneWidget);
+    expect(find.textContaining('kết thúc bằng @gmail.com'), findsOneWidget);
+
+    await tester.enterText(fields.at(0), 'Nguyễn An');
+    await tester.enterText(fields.at(1), '+84 912 345 678');
+    await tester.enterText(fields.at(2), 'an@example.com');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(user.saved?.email, 'an@example.com');
+    await tester.enterText(fields.at(2), 'an@gmail.com');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    expect(user.saved,
+        (name: 'Nguyễn An', phone: '0912345678', email: 'an@gmail.com'));
+    expect(find.byType(EditProfileScreen), findsOneWidget);
+    expect(find.text('Đã lưu thay đổi.'), findsOneWidget);
   });
 
   Future<Transactions> open(WidgetTester tester, Families families,
@@ -189,8 +269,6 @@ void main() {
                   AppRoutes.transactionForm: (context) => Scaffold(
                       body: Text(
                           'Nhập cho tổ ấm ${ModalRoute.of(context)!.settings.arguments}')),
-                  AppRoutes.editProfile: (_) =>
-                      const Scaffold(body: Text('Biểu mẫu hồ sơ')),
                   AppRoutes.supportFeedback: (_) =>
                       const Scaffold(body: Text('Biểu mẫu hỗ trợ')),
                   AppRoutes.forgotPassword: (_) =>
@@ -311,7 +389,7 @@ void main() {
   testWidgets('Một gia đình: bố cục gọn và số tiền đầy đủ', (tester) async {
     await open(tester, Families([family(1)]));
     expect(find.text('61.830.000 đ'), findsOneWidget);
-    expect(find.text('6 hũ chi tiêu'), findsOneWidget);
+    expect(find.text('6 danh mục tài chính'), findsOneWidget);
     expect(find.text('2 thành viên'), findsOneWidget);
     await capture(tester, 'family-single');
     expect(tester.takeException(), isNull);
@@ -338,6 +416,10 @@ void main() {
     await tester.tap(find.text('Tạo gia đình'));
     await tester.pumpAndSettle();
     expect(families.created, 'Tổ ấm mới');
+    final detail = find.text('Chi tiết 99');
+    expect(detail, findsOneWidget);
+    Navigator.of(tester.element(detail)).pop();
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Nhập mã mời'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), '#TEST-2');
@@ -376,6 +458,13 @@ void main() {
     final after = tester.widget<BrandWordmark>(find.byType(BrandWordmark));
     expect(after.fontSize, brand.fontSize);
     expect(after.logoSize, brand.logoSize);
+    final wordmark = tester.widget<Text>(find.descendant(
+      of: find.byType(BrandWordmark),
+      matching: find.byType(Text),
+    ));
+    final spans = wordmark.textSpan! as TextSpan;
+    expect(spans.style?.color, Colors.black);
+    expect(spans.children!.single.style?.color, const Color(0xFFC45D25));
     await capture(tester, 'family-tab');
     expect(tester.takeException(), isNull);
   });
@@ -399,6 +488,14 @@ void main() {
           content: 'Đi chợ',
           amount: 100000,
           type: TransactionType.expense,
+          status: TransactionStatus.approve,
+          categoryName: 'Thiết yếu',
+          createdAt: now.subtract(const Duration(days: 12))),
+      TransactionModel(
+          transactionId: 3,
+          content: 'Hoàn tiền',
+          amount: 5000,
+          type: TransactionType.income,
           status: TransactionStatus.approve,
           categoryName: 'Thiết yếu',
           createdAt: now.subtract(const Duration(days: 12))),
@@ -435,6 +532,40 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Mua sách'), findsOneWidget);
     expect(find.text('Chờ duyệt'), findsOneWidget);
+
+    final tune = find.byTooltip('Tùy biến tìm kiếm giao dịch');
+    await tester.ensureVisible(tune);
+    await tester.tap(tune);
+    await tester.pumpAndSettle();
+    await capture(tester, 'transaction-search-options');
+    await tester.tap(find.text('Chọn khoảng ngày'));
+    await tester.pumpAndSettle();
+    final datePicker = find.byType(DateRangePickerDialog);
+    final popup = tester.getRect(datePicker);
+    expect(popup.height, lessThan(560));
+    expect(popup.left, greaterThan(0));
+    final popupTitle = find.descendant(
+        of: datePicker, matching: find.text('Chọn khoảng ngày'));
+    expect(tester.renderObject<RenderParagraph>(popupTitle).didExceedMaxLines,
+        isFalse);
+    await capture(tester, 'transaction-date-popup');
+    await tester.tap(find.byIcon(Icons.edit_calendar_outlined));
+    await tester.pumpAndSettle();
+    final date = MaterialLocalizations.of(tester.element(datePicker))
+        .formatCompactDate(now.subtract(const Duration(days: 12)));
+    final dateFields =
+        find.descendant(of: datePicker, matching: find.byType(TextField));
+    await tester.enterText(dateFields.at(0), date);
+    await tester.enterText(dateFields.at(1), date);
+    await tester.tap(find.text('Chọn khoảng này').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Chi tiêu'));
+    await tester.tap(find.text('Áp dụng bộ lọc'));
+    await tester.pumpAndSettle();
+    expect(find.text('Đi chợ'), findsOneWidget);
+    expect(find.text('Hoàn tiền'), findsNothing);
+    expect(find.text('Mua sách'), findsNothing);
+    expect(find.widgetWithText(InputChip, 'Chi tiêu'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -446,11 +577,29 @@ void main() {
         of: find.byType(BottomNavBar), matching: find.text('Người dùng')));
     await tester.pumpAndSettle();
     await capture(tester, 'profile-tab');
+    expect(find.text('Cấu hình danh mục tài chính'), findsNothing);
+    expect(find.text('Cấu hình gia đình'), findsNothing);
+    expect(find.text('Bạn và những tổ ấm của mình'), findsNothing);
+    await tester.tap(find.text('Chỉnh sửa thông tin cá nhân'));
+    await tester.pumpAndSettle();
+    expect(find.byType(EditProfileScreen), findsOneWidget);
+    expect(find.byType(BottomNavBar), findsOneWidget);
+    expect(tester.getBottomLeft(find.text('Hủy bỏ')).dy,
+        lessThan(tester.getTopLeft(find.byType(BottomNavBar)).dy));
+    await capture(tester, 'profile-edit-tab');
+    await tester.tap(find.descendant(
+        of: find.byType(BottomNavBar), matching: find.text('Gia đình')));
+    await tester.pumpAndSettle();
+    expect(find.byType(EditProfileScreen), findsNothing);
+    await tester.tap(find.descendant(
+        of: find.byType(BottomNavBar), matching: find.text('Người dùng')));
+    await tester.pumpAndSettle();
+    expect(find.byType(EditProfileScreen), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('Chỉnh sửa thông tin cá nhân'), findsOneWidget);
     for (final (label, destination) in [
-      ('Chỉnh sửa thông tin cá nhân', 'Biểu mẫu hồ sơ'),
       ('Tổ ấm thử nghiệm 2', 'Chi tiết 2'),
-      ('Cấu hình danh mục tài chính', 'Chi tiết 1'),
-      ('Cấu hình gia đình', 'Chi tiết 1'),
       ('Thay đổi mật khẩu', 'Luồng mật khẩu'),
       ('Gửi thông tin cần hỗ trợ', 'Biểu mẫu hỗ trợ'),
     ]) {

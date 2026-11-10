@@ -79,17 +79,6 @@ class BottomNavBar extends StatelessWidget {
                                   : AppColors.onSurfaceVariant,
                             ),
                           ),
-                          const SizedBox(height: 3),
-                          Container(
-                            width: 18,
-                            height: 3,
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? HomeTabColors.coral
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
                         ],
                       ),
                     ),

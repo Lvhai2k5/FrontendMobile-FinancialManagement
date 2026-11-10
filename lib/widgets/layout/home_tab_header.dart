@@ -21,13 +21,11 @@ class HomeTabHeader extends StatelessWidget {
   const HomeTabHeader({
     super.key,
     required this.title,
-    required this.subtitle,
     required this.icon,
     this.artwork,
   });
 
   final String title;
-  final String subtitle;
   final IconData icon;
   final HomeTabArtwork? artwork;
 
@@ -37,16 +35,7 @@ class HomeTabHeader extends StatelessWidget {
       padding: const EdgeInsets.only(top: 2, bottom: 10),
       child: Row(
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: AppTypography.pageTitle),
-                const SizedBox(height: 4),
-                Text(subtitle, style: AppTypography.bodySm),
-              ],
-            ),
-          ),
+          Expanded(child: Text(title, style: AppTypography.pageTitle)),
           const SizedBox(width: 8),
           if (artwork case final art?)
             ExcludeSemantics(child: _HeaderArtwork(artwork: art))

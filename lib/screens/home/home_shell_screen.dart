@@ -11,6 +11,7 @@ import '../../widgets/layout/bottom_nav_bar.dart';
 import '../../widgets/layout/home_app_bar.dart';
 import '../../widgets/layout/home_tab_header.dart';
 import '../family/family_list_tab.dart';
+import '../profile/edit_profile_screen.dart';
 import '../profile/profile_tab.dart';
 import '../transaction/transaction_list_tab.dart';
 import 'overview_tab.dart';
@@ -28,6 +29,7 @@ class HomeShellScreen extends StatefulWidget {
 class _HomeShellScreenState extends State<HomeShellScreen>
     with WidgetsBindingObserver {
   int _index = 0;
+  bool _editingProfile = false;
   TransactionProvider? _transactions;
   Timer? _retryTimer;
 
@@ -101,27 +103,46 @@ class _HomeShellScreenState extends State<HomeShellScreen>
   static const _items = [
     BottomNavItemData(icon: Icons.home_outlined, label: 'Tổng quan'),
     BottomNavItemData(icon: Icons.groups_outlined, label: 'Gia đình'),
-    BottomNavItemData(icon: Icons.swap_horiz, label: 'Giao dịch'),
+    BottomNavItemData(icon: Icons.swap_vert, label: 'Giao dịch'),
     BottomNavItemData(icon: Icons.person_outline, label: 'Người dùng'),
   ];
 
-  static const _tabs = [
-    OverviewTab(),
-    FamilyListTab(),
-    TransactionListTab(),
-    ProfileTab(),
-  ];
+  void _closeProfileEditor() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => _editingProfile = false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: HomeTabColors.canvas,
-      appBar: const HomeAppBar(emphasizeBrand: true),
-      body: IndexedStack(index: _index, children: _tabs),
-      bottomNavigationBar: BottomNavBar(
-        items: _items,
-        currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
+    final showingEditor = _index == 3 && _editingProfile;
+    return PopScope(
+      canPop: !showingEditor,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && showingEditor) _closeProfileEditor();
+      },
+      child: Scaffold(
+        backgroundColor: HomeTabColors.canvas,
+        appBar: showingEditor ? null : const HomeAppBar(emphasizeBrand: true),
+        body: IndexedStack(index: _index, children: [
+          const OverviewTab(),
+          const FamilyListTab(),
+          const TransactionListTab(),
+          IndexedStack(index: _editingProfile ? 1 : 0, children: [
+            ProfileTab(
+                onEditProfile: () => setState(() => _editingProfile = true)),
+            if (_editingProfile)
+              EditProfileScreen(onClose: _closeProfileEditor),
+          ]),
+        ]),
+        bottomNavigationBar: BottomNavBar(
+          items: _items,
+          currentIndex: _index,
+          onTap: (i) {
+            if (i == _index) return;
+            FocusManager.instance.primaryFocus?.unfocus();
+            setState(() => _index = i);
+          },
+        ),
       ),
     );
   }

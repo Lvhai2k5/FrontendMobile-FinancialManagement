@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../config/theme.dart';
 
@@ -11,6 +12,7 @@ Future<String?> showTextInputDialog(
   String confirmLabel = 'Xác nhận',
   String initialValue = '',
   TextInputType keyboardType = TextInputType.text,
+  List<TextInputFormatter>? inputFormatters,
 }) {
   final controller = TextEditingController(text: initialValue);
   return showDialog<String>(
@@ -33,6 +35,7 @@ Future<String?> showTextInputDialog(
             controller: controller,
             autofocus: true,
             keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
             decoration: InputDecoration(
               hintText: hint,
               filled: true,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../config/theme.dart';
 
@@ -14,9 +15,11 @@ class AppTextField extends StatelessWidget {
     this.obscureText = false,
     this.onToggleObscure,
     this.keyboardType,
+    this.inputFormatters,
     this.autofillHints,
     this.validator,
     this.fieldKey,
+    this.compact = false,
   });
 
   final String label;
@@ -26,9 +29,11 @@ class AppTextField extends StatelessWidget {
   final bool obscureText;
   final VoidCallback? onToggleObscure;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
   final Iterable<String>? autofillHints;
   final FormFieldValidator<String>? validator;
   final GlobalKey<FormFieldState<String>>? fieldKey;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +56,7 @@ class AppTextField extends StatelessWidget {
               !obscureText && keyboardType != TextInputType.emailAddress,
           enableSuggestions: !obscureText,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           autofillHints: autofillHints,
           style: AppTypography.bodyMd.copyWith(color: AppColors.onSurface),
           decoration: InputDecoration(
@@ -90,8 +96,8 @@ class AppTextField extends StatelessWidget {
             ),
             errorStyle: AppTypography.bodySm.copyWith(color: AppColors.error),
             errorMaxLines: 3,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            contentPadding: EdgeInsets.symmetric(
+                horizontal: 14, vertical: compact ? 12 : 16),
           ),
         ),
       ],

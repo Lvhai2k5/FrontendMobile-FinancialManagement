@@ -20,7 +20,7 @@ IconData categoryIcon(String name) {
   return Icons.account_balance_wallet_outlined;
 }
 
-/// 1 dòng "hũ chi tiêu" với thanh tiến độ chi/định mức — dùng chung ở tab
+/// Một danh mục với thanh tiến độ chi/định mức — dùng chung ở tab
 /// Tổng quan và màn Chi tiết gia đình. Widget thuần túy: chỉ nhận
 /// [category] và callback [onTap] tuỳ nơi gọi (mở cấu hình hạn mức hay
 /// không).
@@ -30,11 +30,13 @@ class CategoryProgressTile extends StatelessWidget {
     required this.category,
     this.onTap,
     this.index,
+    this.trailing,
   });
 
   final FinancialCategoryModel category;
   final VoidCallback? onTap;
   final int? index;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -96,6 +98,7 @@ class CategoryProgressTile extends StatelessWidget {
                   Text('${category.allocationPercent}%',
                       style: AppTypography.labelSm
                           .copyWith(color: AppColors.outline)),
+                if (trailing case final action?) action,
               ],
             ),
             const SizedBox(height: 8),

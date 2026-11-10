@@ -120,7 +120,7 @@ void main() {
           of: row, matching: find.text('${categories[i].spent.round()}%')));
       expect(percentage.style?.color, expected[i].$2);
     }
-    expect(find.text('4 hũ cần chú ý'), findsOneWidget);
+    expect(find.text('4 danh mục cần chú ý'), findsOneWidget);
     for (final label in [
       'Cảnh báo: 1',
       'Khẩn cấp: 1',
@@ -132,7 +132,7 @@ void main() {
     expect(tester.takeException(), isNull);
     // Same spent/limit, a different configured warning: the banner must follow.
     await show([jar(spent: 60, warning: 60)]);
-    expect(find.text('1 hũ cần chú ý'), findsOneWidget);
+    expect(find.text('1 danh mục cần chú ý'), findsOneWidget);
     await show([jar(spent: 60, warning: 70)]);
     expect(find.byKey(const ValueKey('overview-jar-alert')), findsNothing);
     expect(find.text('Trong ngưỡng'), findsOneWidget);

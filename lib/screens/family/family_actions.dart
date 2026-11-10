@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/family_provider.dart';
 import '../../providers/transaction_provider.dart';
+import '../../routes/app_routes.dart';
+import '../../utils/format_currency.dart';
 import '../../widgets/common/text_input_dialog.dart';
 
 void showSnack(BuildContext context, String message, {bool error = false}) {
@@ -26,9 +28,14 @@ Future<void> promptCreateFamily(BuildContext context) async {
     confirmLabel: 'Tạo gia đình',
   );
   if (name == null || name.isEmpty || !context.mounted) return;
-  final error = await context.read<FamilyProvider>().createFamily(name);
+  final result = await context.read<FamilyProvider>().createFamily(name);
   if (!context.mounted) return;
-  showSnack(context, error ?? 'Đã tạo gia đình "$name".', error: error != null);
+  if (result.familyId case final id?) {
+    Navigator.of(context).pushNamed(AppRoutes.familyDetail, arguments: id);
+    showSnack(context, 'Đã tạo gia đình "$name".');
+  } else {
+    showSnack(context, result.error ?? 'Chưa tạo được gia đình.', error: true);
+  }
 }
 
 /// Nhập mã mời do Chủ hộ sao chép từ Chi tiết gia đình.
@@ -59,7 +66,7 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
   final approval = TextEditingController();
 
   double? parse(TextEditingController c) =>
-      double.tryParse(c.text.trim().replaceAll('.', '').replaceAll(',', ''));
+      parseCurrencyInput(c.text);
 
   Widget field(TextEditingController c, String label, {bool number = true}) =>
       Padding(
@@ -67,6 +74,7 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
         child: TextField(
           controller: c,
           keyboardType: number ? TextInputType.number : TextInputType.text,
+          inputFormatters: number ? const [CurrencyInputFormatter()] : null,
           decoration: InputDecoration(
             labelText: label,
             filled: true,
@@ -89,7 +97,7 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            field(name, 'Tên danh mục (hũ)', number: false),
+            field(name, 'Tên danh mục', number: false),
             field(balance, 'Định mức / số dư ban đầu (đ)'),
             field(warning, 'Ngưỡng cảnh báo (đ)'),
             field(emergency, 'Ngưỡng khẩn cấp (đ)'),

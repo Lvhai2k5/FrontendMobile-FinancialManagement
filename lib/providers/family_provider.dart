@@ -91,16 +91,18 @@ class FamilyProvider with ChangeNotifier {
     }
   }
 
-  /// Trả `null` nếu thành công, ngược lại là message lỗi.
-  Future<String?> createFamily(String name) async {
+  Future<({int? familyId, String? error})> createFamily(String name) async {
     try {
       final created = await _api.create(name);
       await load();
+      if (errorMessage != null) {
+        _details.putIfAbsent(created.familyId, () => created);
+      }
       _selectedFamilyId = created.familyId;
       notifyListeners();
-      return null;
+      return (familyId: created.familyId, error: null);
     } catch (e) {
-      return apiErrorMessage(e);
+      return (familyId: null, error: apiErrorMessage(e));
     }
   }
 

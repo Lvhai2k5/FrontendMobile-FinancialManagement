@@ -5,7 +5,6 @@ import '../../config/theme.dart';
 import '../../providers/notification_provider.dart';
 import '../../routes/app_routes.dart';
 import '../common/brand_wordmark.dart';
-import 'home_tab_header.dart';
 
 /// Thanh app bar dùng chung cho 4 tab chính: logo + tên thương hiệu bên
 /// trái, chuông thông báo bên phải (điều hướng sang màn Thông báo).
@@ -32,8 +31,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                         fit: BoxFit.scaleDown,
                         child: BrandWordmark(
                             logoSize: emphasizeBrand ? 38 : 32,
-                            fontSize: emphasizeBrand ? 26 : 22,
-                            wordmarkColor: HomeTabColors.coral)))),
+                            fontSize: emphasizeBrand ? 28 : 22)))),
             Material(
               color: AppColors.surfaceContainerLowest,
               shape: const CircleBorder(),

@@ -143,8 +143,8 @@ Future<void> changeCategoryLock(
     context,
     label,
     category.locked
-        ? 'Thành viên có quyền Ghi có thể tạo giao dịch trong hũ ${category.name}.'
-        : 'Tạm dừng ghi giao dịch mới trong hũ ${category.name}.',
+        ? 'Thành viên có quyền Ghi có thể tạo giao dịch trong danh mục ${category.name}.'
+        : 'Tạm dừng ghi giao dịch mới trong danh mục ${category.name}.',
     label,
   );
   if (!confirmed || !context.mounted) return;
