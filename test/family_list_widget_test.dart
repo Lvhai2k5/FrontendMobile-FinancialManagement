@@ -269,6 +269,8 @@ void main() {
                   AppRoutes.transactionForm: (context) => Scaffold(
                       body: Text(
                           'Nhập cho tổ ấm ${ModalRoute.of(context)!.settings.arguments}')),
+                  AppRoutes.transactionVoice: (_) =>
+                      const Scaffold(body: Text('Màn ghi âm giọng nói')),
                   AppRoutes.supportFeedback: (_) =>
                       const Scaffold(body: Text('Biểu mẫu hỗ trợ')),
                   AppRoutes.forgotPassword: (_) =>
@@ -503,7 +505,7 @@ void main() {
     await tester.tap(find.descendant(
         of: find.byType(BottomNavBar), matching: find.text('Giao dịch')));
     await tester.pumpAndSettle();
-    for (final name in ['Quét hoá đơn', 'Ghi âm giọng nói', 'Quét đồ vật']) {
+    for (final name in ['Quét hoá đơn', 'Quét đồ vật']) {
       await tester.tap(find.text(name));
       await tester.pumpAndSettle();
       expect(find.textContaining('sẽ có ở bản cập nhật tiếp theo'),
@@ -511,6 +513,12 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
       await tester.pumpAndSettle();
     }
+    // "Ghi âm giọng nói" đã hoạt động: mở màn ghi âm riêng, không còn "sắp có".
+    await tester.tap(find.text('Ghi âm giọng nói'));
+    await tester.pumpAndSettle();
+    expect(find.text('Màn ghi âm giọng nói'), findsOneWidget);
+    Navigator.of(tester.element(find.text('Màn ghi âm giọng nói'))).pop();
+    await tester.pumpAndSettle();
     await capture(tester, 'transactions-tab');
     await tester.tap(find.text('Nhập thủ công'));
     await tester.pumpAndSettle();
