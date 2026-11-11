@@ -68,54 +68,160 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
   double? parse(TextEditingController c) =>
       parseCurrencyInput(c.text);
 
-  Widget field(TextEditingController c, String label, {bool number = true}) =>
+  Widget field(TextEditingController c, String label,
+          {required IconData icon,
+          String? hint,
+          bool number = true,
+          bool last = false}) =>
       Padding(
-        padding: const EdgeInsets.only(bottom: 10),
+        padding: EdgeInsets.only(bottom: last ? 0 : 12),
         child: TextField(
           controller: c,
+          textInputAction: last ? TextInputAction.done : TextInputAction.next,
           keyboardType: number ? TextInputType.number : TextInputType.text,
+          textCapitalization:
+              number ? TextCapitalization.none : TextCapitalization.sentences,
           inputFormatters: number ? const [CurrencyInputFormatter()] : null,
           decoration: InputDecoration(
             labelText: label,
+            hintText: hint,
+            prefixIcon: Icon(icon, size: 20, color: AppColors.primary),
+            suffixText: number ? 'đ' : null,
             filled: true,
-            fillColor: AppColors.surfaceContainerLow,
-            border: OutlineInputBorder(
+            fillColor: Colors.white,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(color: AppColors.surfaceContainer),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: AppColors.primary, width: 1.5),
             ),
           ),
         ),
       );
 
+  Widget section(String title, String subtitle) => Padding(
+        padding: const EdgeInsets.only(top: 18, bottom: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: AppTypography.titleSm),
+            const SizedBox(height: 2),
+            Text(subtitle,
+                style: AppTypography.bodySm
+                    .copyWith(color: AppColors.onSurfaceVariant)),
+          ],
+        ),
+      );
+
   final ok = await showDialog<bool>(
     context: context,
-    builder: (dialogContext) => AlertDialog(
+    builder: (dialogContext) => Dialog(
       backgroundColor: AppColors.background,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text('Thêm danh mục', style: AppTypography.headlineSm),
-      content: SingleChildScrollView(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(dialogContext).size.height * 0.85),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            field(name, 'Tên danh mục', number: false),
-            field(balance, 'Định mức / số dư ban đầu (đ)'),
-            field(warning, 'Ngưỡng cảnh báo (đ)'),
-            field(emergency, 'Ngưỡng khẩn cấp (đ)'),
-            field(approval, 'Ngưỡng cần duyệt mỗi lần (đ)'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.pastelBlush,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(Icons.savings_outlined,
+                        color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Thêm danh mục', style: AppTypography.headlineSm),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    section('Thông tin chung', 'Tên và định mức ban đầu của hũ.'),
+                    field(name, 'Tên danh mục',
+                        icon: Icons.label_outline,
+                        hint: 'Ví dụ: Ăn uống',
+                        number: false),
+                    field(balance, 'Định mức / số dư ban đầu',
+                        icon: Icons.account_balance_wallet_outlined,
+                        hint: '0',
+                        last: true),
+                    section('Ngưỡng cảnh báo',
+                        'Để trống sẽ dùng giá trị gợi ý theo định mức.'),
+                    field(warning, 'Cảnh báo khi chi đến',
+                        icon: Icons.warning_amber_rounded, hint: '80% định mức'),
+                    field(emergency, 'Khẩn cấp khi chi đến',
+                        icon: Icons.error_outline, hint: '100% định mức'),
+                    field(approval, 'Cần duyệt khi mỗi lần chi từ',
+                        icon: Icons.verified_user_outlined,
+                        hint: '0 = không cần duyệt',
+                        last: true),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        minimumSize: const Size.fromHeight(48),
+                        side: BorderSide(color: AppColors.surfaceContainer),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999)),
+                      ),
+                      child: const Text('Huỷ'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton.icon(
+                      onPressed: () => Navigator.of(dialogContext).pop(true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999)),
+                      ),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('Thêm danh mục'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('Huỷ'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          style: FilledButton.styleFrom(backgroundColor: AppColors.primary),
-          child: const Text('Thêm'),
-        ),
-      ],
     ),
   );
   if (ok != true || !context.mounted) return;

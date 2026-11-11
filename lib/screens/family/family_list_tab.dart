@@ -38,36 +38,48 @@ class FamilyListTab extends StatelessWidget {
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                             color: Colors.white,
+                            border: Border.all(
+                                color: HomeTabColors.border, width: 1.5),
                             borderRadius: BorderRadius.circular(16)),
-                        child: Row(
+                        child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                      color: HomeTabColors.neutral,
-                                      borderRadius: BorderRadius.circular(10)),
-                                  child: const Icon(Icons.diversity_3_outlined,
-                                      size: 22, color: HomeTabColors.sage)),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                  child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                    Text(
+                              Row(children: [
+                                Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                        color: HomeTabColors.sageTint,
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    child: const Icon(
+                                        Icons.diversity_3_outlined,
+                                        size: 22,
+                                        color: HomeTabColors.sage)),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                    child: Text(
                                         'Đang tham gia ${families.length} gia đình',
-                                        style: AppTypography.titleSm),
-                                    const SizedBox(height: 8),
-                                    Wrap(spacing: 8, runSpacing: 6, children: [
-                                      _RoleLabel(
-                                          label: 'Chủ hộ $owners', owner: true),
-                                      _RoleLabel(
-                                          label:
-                                              'Thành viên ${families.length - owners}'),
-                                    ]),
-                                  ])),
+                                        style: AppTypography.titleSm)),
+                              ]),
+                              const SizedBox(height: 12),
+                              Row(children: [
+                                Expanded(
+                                    child: _StatTile(
+                                        icon: Icons.verified_user_outlined,
+                                        label: 'Chủ hộ',
+                                        value: owners,
+                                        background: HomeTabColors.sageTint,
+                                        accent: HomeTabColors.sage)),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                    child: _StatTile(
+                                        icon: Icons.person_outline,
+                                        label: 'Thành viên',
+                                        value: families.length - owners,
+                                        background: HomeTabColors.wheatTint,
+                                        accent: HomeTabColors.amber)),
+                              ]),
                             ])),
                     const SizedBox(height: 12),
                     LayoutBuilder(builder: (context, constraints) {
@@ -83,6 +95,8 @@ class FamilyListTab extends StatelessWidget {
                                 icon: Icons.vpn_key_outlined,
                                 title: 'Nhập mã mời',
                                 subtitle: 'Tham gia tổ ấm',
+                                background: HomeTabColors.sageTint,
+                                borderColor: HomeTabColors.sage,
                                 onTap: () => promptJoinFamily(context))),
                         SizedBox(
                             width: width,
@@ -90,7 +104,8 @@ class FamilyListTab extends StatelessWidget {
                                 icon: Icons.add_home_outlined,
                                 title: 'Tạo gia đình mới',
                                 subtitle: 'Bắt đầu quỹ chung',
-                                highlighted: true,
+                                background: HomeTabColors.peachTint,
+                                borderColor: HomeTabColors.coral,
                                 onTap: () => promptCreateFamily(context))),
                       ]);
                     }),
@@ -136,6 +151,35 @@ class FamilyListTab extends StatelessWidget {
   }
 }
 
+class _StatTile extends StatelessWidget {
+  const _StatTile(
+      {required this.icon,
+      required this.label,
+      required this.value,
+      required this.background,
+      required this.accent});
+  final IconData icon;
+  final String label;
+  final int value;
+  final Color background;
+  final Color accent;
+  @override
+  Widget build(BuildContext context) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+          color: background,
+          border: Border.all(color: accent.withValues(alpha: 0.35)),
+          borderRadius: BorderRadius.circular(12)),
+      child: Row(children: [
+        Icon(icon, size: 20, color: accent),
+        const SizedBox(width: 8),
+        Expanded(
+            child: Text(label,
+                style: AppTypography.labelMd.copyWith(color: accent))),
+        Text('$value', style: AppTypography.titleSm.copyWith(color: accent)),
+      ]));
+}
+
 class _RoleLabel extends StatelessWidget {
   const _RoleLabel({required this.label, this.owner = false});
   final String label;
@@ -157,16 +201,20 @@ class _ActionCard extends StatelessWidget {
       required this.title,
       required this.subtitle,
       required this.onTap,
-      this.highlighted = false});
+      required this.background,
+      required this.borderColor});
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
-  final bool highlighted;
+  final Color background;
+  final Color borderColor;
   @override
   Widget build(BuildContext context) => Material(
-      color: highlighted ? AppColors.surfaceContainerLow : Colors.white,
-      borderRadius: BorderRadius.circular(14),
+      color: background,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: borderColor.withValues(alpha: 0.45))),
       child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
@@ -194,7 +242,9 @@ class _FamilyCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: HomeTabColors.border, width: 1.5)),
           child: InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(16),
@@ -242,8 +292,6 @@ class _FamilyCard extends StatelessWidget {
                                                           AppColors.outline)),
                                         ]),
                                   ])),
-                              const Icon(Icons.chevron_right,
-                                  size: 20, color: AppColors.outline),
                             ]),
                         const SizedBox(height: 12),
                         if (!family.canRead)
