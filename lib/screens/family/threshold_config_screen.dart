@@ -110,7 +110,7 @@ class ThresholdConfigScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _ThresholdCard(
             icon: Icons.how_to_reg_outlined,
             title: 'Hạn mức cần chấp thuận',
@@ -118,8 +118,6 @@ class ThresholdConfigScreen extends StatelessWidget {
                 'Khoản chi của thành viên từ mức này sẽ chờ người có quyền Duyệt.',
             amountLabel: 'Ngưỡng tiền phê duyệt mỗi lần',
             threshold: of(ThresholdType.approve),
-            quickAmounts: const [500000, 1000000, 2000000, 5000000],
-            footnote: 'Áp dụng cho mọi thành viên trong nhà',
             editable: isOwner,
             onToggle: (v) => provider.updateThreshold(
                 args.categoryId, ThresholdType.approve,
@@ -128,7 +126,7 @@ class ThresholdConfigScreen extends StatelessWidget {
                 args.categoryId, ThresholdType.approve,
                 amount: v),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _ThresholdCard(
             icon: Icons.notifications_active_outlined,
             title: 'Hạn mức cảnh báo',
@@ -136,7 +134,6 @@ class ThresholdConfigScreen extends StatelessWidget {
                 'Gửi thông báo nhắc nhở nhẹ khi chi tiêu chạm ngưỡng ngân sách đề ra.',
             amountLabel: 'Mức chi tiêu phát cảnh báo',
             threshold: of(ThresholdType.warning),
-            quickAmounts: const [5000000, 10000000, 15000000, 20000000],
             editable: isOwner,
             onToggle: (v) => provider.updateThreshold(
                 args.categoryId, ThresholdType.warning,
@@ -145,7 +142,7 @@ class ThresholdConfigScreen extends StatelessWidget {
                 args.categoryId, ThresholdType.warning,
                 amount: v),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           _ThresholdCard(
             icon: Icons.lock_clock_outlined,
             title: 'Hạn mức khẩn cấp',
@@ -153,7 +150,6 @@ class ThresholdConfigScreen extends StatelessWidget {
                 'Danh mục tự khóa khi tổng chi đã duyệt chạm ngưỡng này.',
             amountLabel: 'Ngưỡng kích hoạt phong toả',
             threshold: of(ThresholdType.emergency),
-            quickAmounts: const [1000000, 2000000, 3000000, 5000000],
             editable: isOwner,
             onToggle: (v) => provider.updateThreshold(
                 args.categoryId, ThresholdType.emergency,
@@ -190,25 +186,22 @@ class ThresholdConfigScreen extends StatelessWidget {
           const SizedBox(height: 20),
           if (isOwner)
             AppButton(
-              label: 'Lưu cấu hình',
-              leadingIcon: Icons.check,
-              backgroundColor: AppColors.primaryContainer,
-              onPressed: () async {
-                    final error =
-                        await provider.saveThresholds(args.categoryId);
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(error ?? 'Đã lưu cấu hình hạn mức.'),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: error == null
-                            ? AppColors.secondary
-                            : AppColors.error,
-                      ),
-                    );
-                    if (error == null) Navigator.of(context).maybePop();
-                  }
-            ),
+                label: 'Lưu cấu hình',
+                leadingIcon: Icons.check,
+                backgroundColor: AppColors.primaryContainer,
+                onPressed: () async {
+                  final error = await provider.saveThresholds(args.categoryId);
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(error ?? 'Đã lưu cấu hình hạn mức.'),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor:
+                          error == null ? AppColors.secondary : AppColors.error,
+                    ),
+                  );
+                  if (error == null) Navigator.of(context).maybePop();
+                }),
         ],
       ),
     );
@@ -222,11 +215,9 @@ class _ThresholdCard extends StatelessWidget {
     required this.description,
     required this.amountLabel,
     required this.threshold,
-    required this.quickAmounts,
     required this.editable,
     required this.onToggle,
     required this.onAmountChanged,
-    this.footnote,
   });
 
   final IconData icon;
@@ -234,11 +225,9 @@ class _ThresholdCard extends StatelessWidget {
   final String description;
   final String amountLabel;
   final ThresholdModel threshold;
-  final List<double> quickAmounts;
   final bool editable;
   final ValueChanged<bool> onToggle;
   final ValueChanged<double> onAmountChanged;
-  final String? footnote;
 
   @override
   Widget build(BuildContext context) {
@@ -248,6 +237,8 @@ class _ThresholdCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+            color: AppColors.outline.withValues(alpha: 0.35), width: 1.2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,11 +260,12 @@ class _ThresholdCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: AppTypography.titleSm),
-                    const SizedBox(height: 2),
+                    Text(title,
+                        style: AppTypography.titleSm.copyWith(fontSize: 17)),
+                    const SizedBox(height: 4),
                     Text(description,
-                        style: AppTypography.labelSm
-                            .copyWith(color: AppColors.outline)),
+                        style: AppTypography.bodyMd.copyWith(
+                            fontSize: 13, color: AppColors.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -286,11 +278,18 @@ class _ThresholdCard extends StatelessWidget {
             ],
           ),
           if (enabled) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
+            Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.outline.withValues(alpha: 0.25)),
+            const SizedBox(height: 16),
             Text(amountLabel,
-                style: AppTypography.labelMd
-                    .copyWith(color: AppColors.onSurfaceVariant)),
-            const SizedBox(height: 6),
+                style: AppTypography.bodyMd.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.onSurface)),
+            const SizedBox(height: 10),
             InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: editable
@@ -311,10 +310,12 @@ class _ThresholdCard extends StatelessWidget {
                     : null,
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerLow,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: AppColors.outline.withValues(alpha: 0.35)),
                   ),
                   child: Row(
                     children: [
@@ -323,7 +324,7 @@ class _ThresholdCard extends StatelessWidget {
                               .copyWith(color: AppColors.primary)),
                       const SizedBox(width: 8),
                       Text(formatCurrency(threshold.amount),
-                          style: AppTypography.titleSm),
+                          style: AppTypography.titleSm.copyWith(fontSize: 18)),
                       const Spacer(),
                       Text('VNĐ',
                           style: AppTypography.labelSm
@@ -331,45 +332,6 @@ class _ThresholdCard extends StatelessWidget {
                     ],
                   ),
                 )),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final amount in quickAmounts)
-                  GestureDetector(
-                    onTap: editable ? () => onAmountChanged(amount) : null,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: threshold.amount == amount
-                            ? AppColors.primaryContainer
-                            : AppColors.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text('+${_shortLabel(amount)}',
-                          style: AppTypography.labelSm.copyWith(
-                              color: threshold.amount == amount
-                                  ? Colors.white
-                                  : AppColors.onSurfaceVariant)),
-                    ),
-                  ),
-              ],
-            ),
-            if (footnote != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.groups_outlined,
-                      size: 14, color: AppColors.outline),
-                  const SizedBox(width: 4),
-                  Text(footnote!,
-                      style: AppTypography.labelSm
-                          .copyWith(color: AppColors.outline)),
-                ],
-              ),
-            ],
           ] else ...[
             const SizedBox(height: 8),
             Row(
@@ -385,13 +347,5 @@ class _ThresholdCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _shortLabel(double amount) {
-    if (amount >= 1000000) {
-      final m = amount / 1000000;
-      return '${m == m.roundToDouble() ? m.toStringAsFixed(0) : m.toStringAsFixed(1)}tr';
-    }
-    return '${(amount / 1000).round()}k';
   }
 }

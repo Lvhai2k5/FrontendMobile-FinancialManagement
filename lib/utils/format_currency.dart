@@ -32,14 +32,14 @@ class CurrencyInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
-    if (!newValue.composing.isCollapsed) return newValue;
     final raw = newValue.text;
     if (_invalidCharacters.hasMatch(raw)) return oldValue;
     final text = _groupDigits(raw.replaceAll(_nonDigits, ''));
     if (!newValue.selection.isValid) return TextEditingValue(text: text);
 
     int offset(int rawOffset) {
-      var digits = raw.substring(0, rawOffset).replaceAll(_nonDigits, '').length;
+      var digits =
+          raw.substring(0, rawOffset).replaceAll(_nonDigits, '').length;
       var index = 0;
       while (digits > 0) {
         if (text[index] != '.') digits--;

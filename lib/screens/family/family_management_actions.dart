@@ -10,17 +10,23 @@ import '../../widgets/common/text_input_dialog.dart';
 import 'family_actions.dart';
 
 Future<void> addFamilyMember(BuildContext context, int familyId) async {
-  final username = await showTextInputDialog(
+  final email = await showTextInputDialog(
     context,
     title: 'Thêm thành viên',
-    hint: 'Tên tài khoản FinNest',
-    message: 'Thành viên mới được cấp quyền Xem và Ghi.',
+    hint: 'Email (Gmail) của người cần thêm',
+    message:
+        'Nhập email đã đăng ký FinNest. Thành viên mới được cấp quyền Xem và Ghi.',
     confirmLabel: 'Thêm thành viên',
+    keyboardType: TextInputType.emailAddress,
   );
-  if (username == null || username.trim().isEmpty || !context.mounted) return;
+  if (email == null || email.trim().isEmpty || !context.mounted) return;
+  if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email.trim())) {
+    showSnack(context, 'Email không hợp lệ.', error: true);
+    return;
+  }
   await _save(
       context,
-      () => context.read<FamilyProvider>().addMember(familyId, username.trim()),
+      () => context.read<FamilyProvider>().addMember(familyId, email.trim()),
       'Đã thêm thành viên.');
 }
 

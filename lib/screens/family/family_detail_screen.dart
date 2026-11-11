@@ -56,14 +56,28 @@ class FamilyDetailScreen extends StatelessWidget {
         title: const Text('Chi tiết gia đình'),
         actions: [
           IconButton(
-            tooltip: 'Tải lại gia đình',
+            tooltip: 'Làm mới',
             onPressed: provider.loading
                 ? null
-                : () => Future.wait([
+                : () async {
+                    final transactionProvider =
+                        context.read<TransactionProvider>();
+                    await Future.wait([
                       provider.load(),
-                      context.read<TransactionProvider>().load(),
-                    ]),
-            icon: const Icon(Icons.refresh),
+                      transactionProvider.load(),
+                    ]);
+                    if (!context.mounted) return;
+                    final error = provider.errorMessage;
+                    showSnack(context, error ?? 'Đã làm mới dữ liệu.',
+                        error: error != null);
+                  },
+            icon: provider.loading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  )
+                : const Icon(Icons.refresh),
           ),
         ],
       ),
