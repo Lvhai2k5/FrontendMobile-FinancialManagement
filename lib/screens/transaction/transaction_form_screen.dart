@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../config/theme.dart';
 import '../../models/transaction_model.dart';
+import '../../models/voice_parse_result.dart';
 import '../../providers/family_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../providers/transaction_provider.dart';
@@ -11,14 +12,25 @@ import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/common/inline_picker.dart';
 
-/// "Nhập thủ công" — cách duy nhất tạo `Transaction` thật (3 kênh còn lại ở
-/// tab Giao dịch chưa có trong phạm vi Backend). Danh mục lấy từ gia
+/// Tham số route cho form được điền sẵn (từ giọng nói).
+class TransactionFormArgs {
+  const TransactionFormArgs({required this.familyId, this.prefill});
+
+  final int? familyId;
+  final VoiceParseResult? prefill;
+}
+
+/// "Nhập thủ công" — form xác nhận tạo `Transaction` thật; Giọng nói chỉ điền
+/// sẵn form này (các kênh khác ở tab Giao dịch chưa có). Danh mục lấy từ gia
 /// đình đang chọn; Backend quyết định giao dịch được ghi nhận ngay hay phải
 /// chờ Chủ hộ duyệt (vượt ngưỡng cần duyệt).
 class TransactionFormScreen extends StatefulWidget {
-  const TransactionFormScreen({super.key, this.familyId});
+  const TransactionFormScreen({super.key, this.familyId, this.prefill});
 
   final int? familyId;
+
+  /// Gợi ý từ giọng nói — chỉ điền sẵn, người dùng vẫn phải xem lại và bấm Lưu.
+  final VoiceParseResult? prefill;
 
   @override
   State<TransactionFormScreen> createState() => _TransactionFormScreenState();
@@ -37,6 +49,14 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
     super.initState();
     _familyId =
         widget.familyId ?? context.read<FamilyProvider>().selectedFamilyId;
+    final prefill = widget.prefill;
+    if (prefill != null) {
+      _type = prefill.type;
+      _contentController.text = prefill.content ?? '';
+      final amount = prefill.amount;
+      if (amount != null) _amountController.text = formatCurrency(amount);
+      _categoryId = prefill.categoryId;
+    }
   }
 
   @override

@@ -144,47 +144,54 @@ class _TransactionListTabState extends State<TransactionListTab> {
                 Text('Phương thức tạo giao dịch',
                     style: AppTypography.headlineSm),
                 const SizedBox(height: 12),
-                Row(children: [
-                  Expanded(
-                      child: _MethodCard(
-                          icon: Icons.edit_note,
-                          fill: HomeTabColors.sageTint,
-                          ink: HomeTabColors.sage,
-                          title: 'Nhập thủ công',
-                          onTap: () => Navigator.of(context).pushNamed(
-                                AppRoutes.transactionForm,
-                                arguments: context
-                                    .read<FamilyProvider>()
-                                    .selectedFamilyId,
-                              ))),
-                  const SizedBox(width: 8),
-                  Expanded(
-                      child: _MethodCard(
-                          icon: Icons.document_scanner_outlined,
-                          fill: HomeTabColors.wheatTint,
-                          ink: HomeTabColors.amber,
-                          title: 'Quét hoá đơn',
-                          onTap: () => _showComingSoon('Quét hoá đơn AI'))),
-                ]),
-                const SizedBox(height: 8),
-                Row(children: [
-                  Expanded(
-                      child: _MethodCard(
-                          icon: Icons.mic_none,
-                          fill: HomeTabColors.peachTint,
-                          ink: HomeTabColors.coral,
-                          title: 'Ghi âm giọng nói',
-                          onTap: () => _showComingSoon('Ghi âm giọng nói'))),
-                  const SizedBox(width: 8),
-                  Expanded(
-                      child: _MethodCard(
-                    icon: Icons.center_focus_weak,
-                    fill: AppColors.pastelLavender,
-                    ink: const Color(0xFF604675),
-                    title: 'Quét đồ vật',
-                    onTap: () => _showComingSoon('Quét đồ vật'),
-                  )),
-                ]),
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  mainAxisExtent:
+                      54 + MediaQuery.textScalerOf(context).scale(48),
+                  children: [
+                    _MethodCard(
+                      icon: Icons.edit_note,
+                      fill: HomeTabColors.sageTint,
+                      ink: HomeTabColors.sage,
+                      title: 'Nhập thủ công',
+                      subtitle: 'Điền biểu mẫu',
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.transactionForm,
+                        arguments:
+                            context.read<FamilyProvider>().selectedFamilyId,
+                      ),
+                    ),
+                    _MethodCard(
+                      icon: Icons.document_scanner_outlined,
+                      fill: HomeTabColors.wheatTint,
+                      ink: HomeTabColors.amber,
+                      title: 'Quét hoá đơn',
+                      onTap: () => _showComingSoon('Quét hoá đơn AI'),
+                    ),
+                    _MethodCard(
+                      icon: Icons.mic_none,
+                      fill: HomeTabColors.peachTint,
+                      ink: HomeTabColors.coral,
+                      title: 'Ghi âm giọng nói',
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.transactionVoice,
+                        arguments:
+                            context.read<FamilyProvider>().selectedFamilyId,
+                      ),
+                    ),
+                    _MethodCard(
+                      icon: Icons.center_focus_weak,
+                      fill: AppColors.pastelLavender,
+                      ink: const Color(0xFF604675),
+                      title: 'Quét đồ vật',
+                      onTap: () => _showComingSoon('Quét đồ vật'),
+                    ),
+                  ],
+                ),
                 const OfflineQueuePanel(),
               ],
               const SizedBox(height: 20),
