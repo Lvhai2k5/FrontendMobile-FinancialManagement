@@ -20,6 +20,7 @@ class AppTextField extends StatelessWidget {
     this.validator,
     this.fieldKey,
     this.compact = false,
+    this.suffixText,
   });
 
   final String label;
@@ -34,6 +35,9 @@ class AppTextField extends StatelessWidget {
   final FormFieldValidator<String>? validator;
   final GlobalKey<FormFieldState<String>>? fieldKey;
   final bool compact;
+
+  /// Đơn vị hiển thị cuối ô (vd. `đ`).
+  final String? suffixText;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +69,8 @@ class AppTextField extends StatelessWidget {
             filled: true,
             fillColor: AppColors.surfaceContainerLow,
             prefixIcon: Icon(prefixIcon, size: 20, color: AppColors.primary),
+            suffixText: suffixText,
+            suffixStyle: AppTypography.titleSm.copyWith(color: AppColors.primary),
             suffixIcon: onToggleObscure == null
                 ? null
                 : IconButton(
