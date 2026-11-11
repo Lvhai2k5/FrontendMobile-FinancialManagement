@@ -144,50 +144,47 @@ class _TransactionListTabState extends State<TransactionListTab> {
                 Text('Phương thức tạo giao dịch',
                     style: AppTypography.headlineSm),
                 const SizedBox(height: 12),
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  mainAxisExtent:
-                      54 + MediaQuery.textScalerOf(context).scale(48),
-                  children: [
-                    _MethodCard(
-                      icon: Icons.edit_note,
-                      fill: HomeTabColors.sageTint,
-                      ink: HomeTabColors.sage,
-                      title: 'Nhập thủ công',
-                      subtitle: 'Điền biểu mẫu',
-                      onTap: () => Navigator.of(context).pushNamed(
-                        AppRoutes.transactionForm,
-                        arguments:
-                            context.read<FamilyProvider>().selectedFamilyId,
-                      ),
-                    ),
-                    _MethodCard(
-                      icon: Icons.document_scanner_outlined,
-                      fill: HomeTabColors.wheatTint,
-                      ink: HomeTabColors.amber,
-                      title: 'Quét hoá đơn',
-                      onTap: () => _showComingSoon('Quét hoá đơn AI'),
-                    ),
-                    _MethodCard(
-                      icon: Icons.mic_none,
-                      fill: HomeTabColors.peachTint,
-                      ink: HomeTabColors.coral,
-                      title: 'Ghi âm giọng nói',
-                      onTap: () => _showComingSoon('Ghi âm giọng nói'),
-                    ),
-                    _MethodCard(
-                      icon: Icons.center_focus_weak,
-                      fill: AppColors.pastelLavender,
-                      ink: const Color(0xFF604675),
-                      title: 'Quét đồ vật',
-                      onTap: () => _showComingSoon('Quét đồ vật'),
-                    ),
-                  ],
-                ),
+                Row(children: [
+                  Expanded(
+                      child: _MethodCard(
+                          icon: Icons.edit_note,
+                          fill: HomeTabColors.sageTint,
+                          ink: HomeTabColors.sage,
+                          title: 'Nhập thủ công',
+                          onTap: () => Navigator.of(context).pushNamed(
+                                AppRoutes.transactionForm,
+                                arguments: context
+                                    .read<FamilyProvider>()
+                                    .selectedFamilyId,
+                              ))),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: _MethodCard(
+                          icon: Icons.document_scanner_outlined,
+                          fill: HomeTabColors.wheatTint,
+                          ink: HomeTabColors.amber,
+                          title: 'Quét hoá đơn',
+                          onTap: () => _showComingSoon('Quét hoá đơn AI'))),
+                ]),
+                const SizedBox(height: 8),
+                Row(children: [
+                  Expanded(
+                      child: _MethodCard(
+                          icon: Icons.mic_none,
+                          fill: HomeTabColors.peachTint,
+                          ink: HomeTabColors.coral,
+                          title: 'Ghi âm giọng nói',
+                          onTap: () => _showComingSoon('Ghi âm giọng nói'))),
+                  const SizedBox(width: 8),
+                  Expanded(
+                      child: _MethodCard(
+                    icon: Icons.center_focus_weak,
+                    fill: AppColors.pastelLavender,
+                    ink: const Color(0xFF604675),
+                    title: 'Quét đồ vật',
+                    onTap: () => _showComingSoon('Quét đồ vật'),
+                  )),
+                ]),
                 const OfflineQueuePanel(),
               ],
               const SizedBox(height: 20),
@@ -455,14 +452,16 @@ class _MethodCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 25, color: ink),
+              Icon(icon, size: 23, color: ink),
               const SizedBox(height: 5),
               Text(title,
-                  textAlign: TextAlign.center, style: AppTypography.labelMd),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.labelMd
+                      .copyWith(fontWeight: FontWeight.w600)),
               if (subtitle case final text?)
                 Text(text,
                     textAlign: TextAlign.center, style: AppTypography.bodySm),
@@ -484,66 +483,70 @@ class _TransactionTile extends StatelessWidget {
     final isExpense = transaction.type == TransactionType.expense;
     String two(int n) => n.toString().padLeft(2, '0');
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color:
-                  isExpense ? HomeTabColors.peachTint : HomeTabColors.sageTint,
-              borderRadius: BorderRadius.circular(10),
+    return InkWell(
+      onTap: () => Navigator.of(context).pushNamed(AppRoutes.transactionDetail,
+          arguments: transaction.transactionId),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isExpense
+                    ? HomeTabColors.peachTint
+                    : HomeTabColors.sageTint,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isExpense ? Icons.arrow_upward : Icons.arrow_downward,
+                size: 16,
+                color:
+                    isExpense ? AppColors.onSurfaceVariant : HomeTabColors.sage,
+              ),
             ),
-            child: Icon(
-              isExpense ? Icons.arrow_upward : Icons.arrow_downward,
-              size: 16,
-              color:
-                  isExpense ? AppColors.onSurfaceVariant : HomeTabColors.sage,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(transaction.content,
+                      style: AppTypography.bodyMd,
+                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    '${two(transaction.createdAt.hour)}:${two(transaction.createdAt.minute)} · ${transaction.categoryName}',
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.outline),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(transaction.content,
-                    style: AppTypography.bodyMd,
-                    overflow: TextOverflow.ellipsis),
                 Text(
-                  '${two(transaction.createdAt.hour)}:${two(transaction.createdAt.minute)} · ${transaction.categoryName}',
-                  style:
-                      AppTypography.labelSm.copyWith(color: AppColors.outline),
+                  '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)} đ',
+                  style: AppTypography.titleSm.copyWith(
+                      color:
+                          isExpense ? HomeTabColors.coral : HomeTabColors.sage),
+                ),
+                const SizedBox(height: 2),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: transaction.status.background,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(transaction.status.label,
+                      style: AppTypography.labelSm
+                          .copyWith(color: AppColors.onSurfaceVariant)),
                 ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)} đ',
-                style: AppTypography.titleSm.copyWith(
-                    color:
-                        isExpense ? HomeTabColors.coral : HomeTabColors.sage),
-              ),
-              const SizedBox(height: 2),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: transaction.status == TransactionStatus.approve
-                      ? AppColors.secondaryContainer
-                      : AppColors.pastelBlush,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(transaction.status.label,
-                    style: AppTypography.labelSm
-                        .copyWith(color: AppColors.onSurfaceVariant)),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

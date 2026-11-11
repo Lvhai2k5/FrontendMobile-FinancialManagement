@@ -177,6 +177,24 @@ class TransactionProvider with ChangeNotifier {
     }
   }
 
+  /// Duyệt/từ chối giao dịch đang chờ. Trả `null` nếu thành công, ngược lại
+  /// là message lỗi để screen hiển thị.
+  Future<String?> decide(int transactionId, {required bool approved}) async {
+    final session = _session;
+    try {
+      final updated = approved
+          ? await _api.approve(transactionId)
+          : await _api.reject(transactionId);
+      if (session == _session) {
+        _remember(updated);
+        notifyListeners();
+      }
+      return null;
+    } catch (e) {
+      return apiErrorMessage(e);
+    }
+  }
+
   /// Trả giao dịch vừa tạo, hoặc ném lỗi message để screen hiển thị.
   Future<({TransactionModel? created, String? error, bool queued})>
       addManualTransaction({

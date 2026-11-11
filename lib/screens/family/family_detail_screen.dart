@@ -509,7 +509,8 @@ class _OutlineAction extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
           decoration: BoxDecoration(
             color: tint,
-            border: Border.all(color: accent.withValues(alpha: 0.6), width: 1.5),
+            border:
+                Border.all(color: accent.withValues(alpha: 0.6), width: 1.5),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -571,33 +572,35 @@ class _TransactionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isExpense = transaction.type == TransactionType.expense;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(transaction.content,
-                style: AppTypography.bodySm, overflow: TextOverflow.ellipsis),
-          ),
-          Text(
-            '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)} đ',
-            style: AppTypography.labelMd.copyWith(
-                color: isExpense ? AppColors.primary : AppColors.secondary),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: transaction.status == TransactionStatus.approve
-                  ? AppColors.secondaryContainer
-                  : AppColors.pastelBlush,
-              borderRadius: BorderRadius.circular(999),
+    return InkWell(
+      onTap: () => Navigator.of(context).pushNamed(AppRoutes.transactionDetail,
+          arguments: transaction.transactionId),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(transaction.content,
+                  style: AppTypography.bodySm, overflow: TextOverflow.ellipsis),
             ),
-            child: Text(transaction.status.label,
-                style: AppTypography.labelSm
-                    .copyWith(color: AppColors.onSurfaceVariant)),
-          ),
-        ],
+            Text(
+              '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)} đ',
+              style: AppTypography.labelMd.copyWith(
+                  color: isExpense ? AppColors.primary : AppColors.secondary),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: transaction.status.background,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(transaction.status.label,
+                  style: AppTypography.labelSm
+                      .copyWith(color: AppColors.onSurfaceVariant)),
+            ),
+          ],
+        ),
       ),
     );
   }
