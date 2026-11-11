@@ -11,6 +11,7 @@ import '../screens/profile/edit_profile_screen.dart';
 import '../screens/profile/support_feedback_screen.dart';
 import '../screens/register/register_screen.dart';
 import '../screens/reset_password/reset_password_screen.dart';
+import '../screens/transaction/transaction_detail_screen.dart';
 import '../screens/transaction/transaction_form_screen.dart';
 import '../screens/transaction/transaction_list_tab.dart';
 import '../screens/welcome/welcome_screen.dart';
@@ -36,6 +37,7 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String transactionForm = '/transaction-form';
   static const String familyTransactions = '/family-transactions';
+  static const String transactionDetail = '/transaction-detail';
   static const String editProfile = '/edit-profile';
   static const String supportFeedback = '/support-feedback';
 
@@ -79,6 +81,11 @@ class AppRoutes {
             appBar: AppBar(title: const Text('Giao dịch gia đình')),
             body: TransactionListTab(familyId: settings.arguments as int),
           ),
+        );
+      case transactionDetail:
+        return MaterialPageRoute(
+          builder: (_) =>
+              TransactionDetailScreen(transactionId: settings.arguments as int),
         );
       case transactionForm:
         return MaterialPageRoute(
