@@ -177,7 +177,9 @@ class ThresholdConfigScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Lưu ý: Chủ hộ có thể chỉnh các ngưỡng bảo vệ cho từng danh mục.',
+                    isOwner
+                        ? 'Lưu ý: Chủ hộ có thể chỉnh các ngưỡng bảo vệ cho từng danh mục.'
+                        : 'Bạn chỉ có quyền xem. Chỉ chủ hộ mới được chỉnh cấu hình hạn mức.',
                     style: AppTypography.bodySm
                         .copyWith(color: AppColors.onSurfaceVariant),
                   ),
@@ -186,12 +188,12 @@ class ThresholdConfigScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          AppButton(
-            label: 'Lưu cấu hình',
-            leadingIcon: Icons.check,
-            backgroundColor: AppColors.primaryContainer,
-            onPressed: isOwner
-                ? () async {
+          if (isOwner)
+            AppButton(
+              label: 'Lưu cấu hình',
+              leadingIcon: Icons.check,
+              backgroundColor: AppColors.primaryContainer,
+              onPressed: () async {
                     final error =
                         await provider.saveThresholds(args.categoryId);
                     if (!context.mounted) return;
@@ -206,16 +208,7 @@ class ThresholdConfigScreen extends StatelessWidget {
                     );
                     if (error == null) Navigator.of(context).maybePop();
                   }
-                : () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Chỉ chủ hộ mới được sửa cấu hình này.'),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: AppColors.error,
-                      ),
-                    );
-                  },
-          ),
+            ),
         ],
       ),
     );

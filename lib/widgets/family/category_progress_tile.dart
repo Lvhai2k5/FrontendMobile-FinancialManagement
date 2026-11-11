@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../config/theme.dart';
 import '../../models/family_model.dart';
 import '../../utils/format_currency.dart';
+import '../layout/home_tab_header.dart';
 
 IconData categoryIcon(String name) {
   if (name.contains('thiết yếu')) return Icons.shopping_basket_outlined;
@@ -18,6 +19,17 @@ IconData categoryIcon(String name) {
     return Icons.volunteer_activism_outlined;
   }
   return Icons.account_balance_wallet_outlined;
+}
+
+/// % đã dùng = đã chi / định mức của chính danh mục (không phải tỷ trọng
+/// trong tổng quỹ). Dưới 10% giữ 1 chữ số thập phân để không hiện "0%".
+String _usedPercentLabel(FinancialCategoryModel c) {
+  if (c.limitAmount <= 0) return '0%';
+  final pct = c.spent / c.limitAmount * 100;
+  if (pct >= 10 || pct == 0) return '${pct.round()}%';
+  final text = pct.toStringAsFixed(1);
+  if (text.endsWith('.0')) return '${text.substring(0, text.length - 2)}%';
+  return '${text.replaceAll('.', ',')}%';
 }
 
 /// Một danh mục với thanh tiến độ chi/định mức — dùng chung ở tab
@@ -56,6 +68,7 @@ class CategoryProgressTile extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.surfaceContainerLowest,
+          border: Border.all(color: HomeTabColors.border, width: 1.2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -77,7 +90,7 @@ class CategoryProgressTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     index != null
-                        ? '${index!}. ${category.name} (${category.allocationPercent}%)'
+                        ? '${index!}. ${category.name}'
                         : category.name,
                     style: AppTypography.titleSm,
                   ),
@@ -93,11 +106,7 @@ class CategoryProgressTile extends StatelessWidget {
                     child: Text('Khoá an toàn',
                         style: AppTypography.labelSm
                             .copyWith(color: AppColors.error)),
-                  )
-                else
-                  Text('${category.allocationPercent}%',
-                      style: AppTypography.labelSm
-                          .copyWith(color: AppColors.outline)),
+                  ),
                 if (trailing case final action?) action,
               ],
             ),
@@ -111,10 +120,21 @@ class CategoryProgressTile extends StatelessWidget {
                 valueColor: AlwaysStoppedAnimation(barColor),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Đã chi: ${formatCurrency(category.spent)} đ · Định mức: ${formatCurrency(category.limitAmount)} đ',
-              style: AppTypography.labelSm.copyWith(color: AppColors.outline),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text('Đã dùng ${_usedPercentLabel(category)}',
+                    style: AppTypography.labelMd.copyWith(color: barColor)),
+                const Spacer(),
+                Flexible(
+                  child: Text(
+                    '${formatCurrency(category.spent)} / ${formatCurrency(category.limitAmount)} đ',
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.outline),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
