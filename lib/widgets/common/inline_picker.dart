@@ -71,7 +71,7 @@ class _InlinePickerState<T> extends State<InlinePicker<T>> {
                   selected: option.key == widget.value,
                   selectedTileColor: widget.prominent
                       ? AppColors.secondaryContainer.withValues(alpha: 0.5)
-                      : null,
+                      : AppColors.primaryContainer.withValues(alpha: 0.14),
                   trailing: option.key == widget.value
                       ? const Icon(Icons.check)
                       : null,

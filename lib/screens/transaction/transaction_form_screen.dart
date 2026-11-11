@@ -160,12 +160,12 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             _InfoBox(
                 'Bạn chưa thuộc gia đình nào. Hãy tạo gia đình hoặc nhập mã mời ở tab Gia đình trước khi ghi giao dịch.')
           else ...[
-            Text('Tổ ấm',
+            Text('Gia đình',
                 style: AppTypography.titleSm
                     .copyWith(color: AppColors.onSurfaceVariant)),
             const SizedBox(height: 8),
             InlinePicker<int>(
-              placeholder: 'Chọn tổ ấm',
+              placeholder: 'Chọn gia đình',
               value: familyId,
               options: {for (final f in families) f.familyId: f.name},
               onChanged: _saving
@@ -180,9 +180,9 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
             ),
             const SizedBox(height: 16),
             if (familyId == null)
-              const _InfoBox('Chọn tổ ấm để xem danh mục.')
+              const _InfoBox('Chọn gia đình để xem danh mục.')
             else if (detail?.canWrite != true)
-              const _InfoBox('Bạn chưa có quyền Ghi trong tổ ấm này.')
+              const _InfoBox('Bạn chưa có quyền Ghi trong gia đình này.')
             else ...[
               Row(
                 children: [
@@ -220,6 +220,7 @@ class _TransactionFormScreenState extends State<TransactionFormScreen> {
                 controller: _amountController,
                 hintText: '0',
                 prefixIcon: Icons.payments_outlined,
+                suffixText: 'đ',
                 keyboardType: TextInputType.number,
                 inputFormatters: const [CurrencyInputFormatter()],
               ),

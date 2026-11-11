@@ -16,6 +16,11 @@ class TransactionApi {
         .toList();
   }
 
+  Future<TransactionModel> get(int transactionId) async {
+    final res = await apiClient.get('/transactions/$transactionId');
+    return TransactionModel.fromJson(res.data as Map<String, dynamic>);
+  }
+
   Future<TransactionModel> create({
     required int financialCategoryId,
     required String content,
@@ -36,11 +41,13 @@ class TransactionApi {
     return TransactionModel.fromJson(res.data as Map<String, dynamic>);
   }
 
-  Future<void> approve(int transactionId) async {
-    await apiClient.post('/transactions/$transactionId/approve');
+  Future<TransactionModel> approve(int transactionId) async {
+    final res = await apiClient.post('/transactions/$transactionId/approve');
+    return TransactionModel.fromJson(res.data as Map<String, dynamic>);
   }
 
-  Future<void> reject(int transactionId) async {
-    await apiClient.post('/transactions/$transactionId/reject');
+  Future<TransactionModel> reject(int transactionId) async {
+    final res = await apiClient.post('/transactions/$transactionId/reject');
+    return TransactionModel.fromJson(res.data as Map<String, dynamic>);
   }
 }

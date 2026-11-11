@@ -118,8 +118,8 @@ class FamilyProvider with ChangeNotifier {
     }
   }
 
-  Future<String?> addMember(int familyId, String username) =>
-      _change(() => _api.addMember(familyId, username));
+  Future<String?> addMember(int familyId, String email) =>
+      _change(() => _api.addMember(familyId, email));
 
   Future<String?> removeMember(int familyId, int personId) =>
       _change(() => _api.removeMember(familyId, personId));

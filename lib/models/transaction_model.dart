@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../utils/api_error.dart';
 
 /// Loại giao dịch — khớp `TransactionType`, xem `BUSINESS-REQUIREMENTS.md`
@@ -16,6 +18,21 @@ extension TransactionStatusLabel on TransactionStatus {
       };
 }
 
+/// Màu nhãn trạng thái dùng chung: duyệt = xanh lá, chờ = vàng, từ chối = đỏ nhẹ.
+extension TransactionStatusColors on TransactionStatus {
+  Color get background => switch (this) {
+        TransactionStatus.approve => const Color(0xFFDDF1DD),
+        TransactionStatus.pend => const Color(0xFFFFF0BF),
+        TransactionStatus.reject => const Color(0xFFFDE2E2),
+      };
+
+  Color get foreground => switch (this) {
+        TransactionStatus.approve => const Color(0xFF2E7D32),
+        TransactionStatus.pend => const Color(0xFF9A6700),
+        TransactionStatus.reject => const Color(0xFFD14B4B),
+      };
+}
+
 /// 1 giao dịch — khớp entity `Transaction` mục 4.7 (rút gọn cho hiển thị
 /// danh sách, Backend chưa có endpoint `/transactions`).
 class TransactionModel {
@@ -29,6 +46,7 @@ class TransactionModel {
     required this.createdAt,
     this.familyId,
     this.financialCategoryId,
+    this.createdPersonName,
   });
 
   final int transactionId;
@@ -40,6 +58,7 @@ class TransactionModel {
   final DateTime createdAt;
   final int? familyId;
   final int? financialCategoryId;
+  final String? createdPersonName;
 
   /// Backend trả 	ype = INCOME/EXPENSE, status = DRAFT/PENDING/REVIEW/
   /// APPROVED/REJECTED/OFFLINE; Mobile gộp mọi trạng thái chưa quyết định
@@ -62,5 +81,6 @@ class TransactionModel {
             DateTime.now(),
         familyId: (json['familyId'] as num?)?.toInt(),
         financialCategoryId: (json['financialCategoryId'] as num?)?.toInt(),
+        createdPersonName: json['createdPersonName'] as String?,
       );
 }

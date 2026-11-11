@@ -459,14 +459,16 @@ class _MethodCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 25, color: ink),
+              Icon(icon, size: 23, color: ink),
               const SizedBox(height: 5),
               Text(title,
-                  textAlign: TextAlign.center, style: AppTypography.labelMd),
+                  textAlign: TextAlign.center,
+                  style: AppTypography.labelMd
+                      .copyWith(fontWeight: FontWeight.w600)),
               if (subtitle case final text?)
                 Text(text,
                     textAlign: TextAlign.center, style: AppTypography.bodySm),
@@ -488,66 +490,70 @@ class _TransactionTile extends StatelessWidget {
     final isExpense = transaction.type == TransactionType.expense;
     String two(int n) => n.toString().padLeft(2, '0');
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color:
-                  isExpense ? HomeTabColors.peachTint : HomeTabColors.sageTint,
-              borderRadius: BorderRadius.circular(10),
+    return InkWell(
+      onTap: () => Navigator.of(context).pushNamed(AppRoutes.transactionDetail,
+          arguments: transaction.transactionId),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isExpense
+                    ? HomeTabColors.peachTint
+                    : HomeTabColors.sageTint,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                isExpense ? Icons.arrow_upward : Icons.arrow_downward,
+                size: 16,
+                color:
+                    isExpense ? AppColors.onSurfaceVariant : HomeTabColors.sage,
+              ),
             ),
-            child: Icon(
-              isExpense ? Icons.arrow_upward : Icons.arrow_downward,
-              size: 16,
-              color:
-                  isExpense ? AppColors.onSurfaceVariant : HomeTabColors.sage,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(transaction.content,
+                      style: AppTypography.bodyMd,
+                      overflow: TextOverflow.ellipsis),
+                  Text(
+                    '${two(transaction.createdAt.hour)}:${two(transaction.createdAt.minute)} · ${transaction.categoryName}',
+                    style: AppTypography.labelSm
+                        .copyWith(color: AppColors.outline),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(transaction.content,
-                    style: AppTypography.bodyMd,
-                    overflow: TextOverflow.ellipsis),
                 Text(
-                  '${two(transaction.createdAt.hour)}:${two(transaction.createdAt.minute)} · ${transaction.categoryName}',
-                  style:
-                      AppTypography.labelSm.copyWith(color: AppColors.outline),
+                  '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)} đ',
+                  style: AppTypography.titleSm.copyWith(
+                      color:
+                          isExpense ? HomeTabColors.coral : HomeTabColors.sage),
+                ),
+                const SizedBox(height: 2),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: transaction.status.background,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(transaction.status.label,
+                      style: AppTypography.labelSm
+                          .copyWith(color: AppColors.onSurfaceVariant)),
                 ),
               ],
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)} đ',
-                style: AppTypography.titleSm.copyWith(
-                    color:
-                        isExpense ? HomeTabColors.coral : HomeTabColors.sage),
-              ),
-              const SizedBox(height: 2),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: transaction.status == TransactionStatus.approve
-                      ? AppColors.secondaryContainer
-                      : AppColors.pastelBlush,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(transaction.status.label,
-                    style: AppTypography.labelSm
-                        .copyWith(color: AppColors.onSurfaceVariant)),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

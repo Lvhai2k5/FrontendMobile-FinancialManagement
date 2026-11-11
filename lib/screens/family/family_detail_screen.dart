@@ -8,6 +8,7 @@ import '../../providers/family_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/format_currency.dart';
+import '../../widgets/layout/home_tab_header.dart';
 import '../../widgets/family/category_progress_tile.dart';
 import 'family_actions.dart';
 import 'family_management_actions.dart';
@@ -55,14 +56,28 @@ class FamilyDetailScreen extends StatelessWidget {
         title: const Text('Chi tiết gia đình'),
         actions: [
           IconButton(
-            tooltip: 'Tải lại gia đình',
+            tooltip: 'Làm mới',
             onPressed: provider.loading
                 ? null
-                : () => Future.wait([
+                : () async {
+                    final transactionProvider =
+                        context.read<TransactionProvider>();
+                    await Future.wait([
                       provider.load(),
-                      context.read<TransactionProvider>().load(),
-                    ]),
-            icon: const Icon(Icons.refresh),
+                      transactionProvider.load(),
+                    ]);
+                    if (!context.mounted) return;
+                    final error = provider.errorMessage;
+                    showSnack(context, error ?? 'Đã làm mới dữ liệu.',
+                        error: error != null);
+                  },
+            icon: provider.loading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  )
+                : const Icon(Icons.refresh),
           ),
         ],
       ),
@@ -79,44 +94,90 @@ class FamilyDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceContainerLowest,
+                        border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.3)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.home_outlined,
+                          color: AppColors.primary, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(family.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.headlineSm),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              _HeaderChip(
+                                  icon: Icons.verified_user_outlined,
+                                  label:
+                                      'Bạn là ${family.myRole.label.toLowerCase()}'),
+                              const SizedBox(width: 8),
+                              _HeaderChip(
+                                  icon: Icons.group_outlined,
+                                  label: '${family.members.length} thành viên'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
                 Container(
+                  width: double.infinity,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: HomeTabColors.border, width: 1.2),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Text('Bạn là ${family.myRole.label.toLowerCase()}',
-                      style: AppTypography.labelSm
-                          .copyWith(color: AppColors.primary)),
+                  child: family.canRead
+                      ? Row(
+                          children: [
+                            const Icon(Icons.account_balance_wallet_outlined,
+                                color: AppColors.primary, size: 26),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FittedBox(
+                                alignment: Alignment.centerLeft,
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                    '${formatCurrency(family.totalBudget)} đ',
+                                    style: AppTypography.brandTitle),
+                              ),
+                            ),
+                            if (family.budgetGrowthPercent > 0) ...[
+                              const SizedBox(width: 8),
+                              Text('+${family.budgetGrowthPercent}%',
+                                  style: AppTypography.labelMd
+                                      .copyWith(color: AppColors.secondary)),
+                            ],
+                          ],
+                        )
+                      : Text('Bạn chưa có quyền Xem dữ liệu tài chính.',
+                          style: AppTypography.bodySm),
                 ),
-                const SizedBox(height: 8),
-                Text(family.name, style: AppTypography.headlineLgMobile),
-                const SizedBox(height: 2),
-                const SizedBox(height: 12),
-                if (family.canRead) ...[
-                  Text('TỔNG QUỸ CHUNG KHẢ DỤNG',
+                if (family.foundedLabel.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(family.foundedLabel,
                       style: AppTypography.labelSm
                           .copyWith(color: AppColors.outline)),
-                  Row(
-                    children: [
-                      Text('${formatCurrency(family.totalBudget)} đ',
-                          style: AppTypography.brandTitle),
-                      const SizedBox(width: 8),
-                      if (family.budgetGrowthPercent > 0)
-                        Text('+${family.budgetGrowthPercent}%',
-                            style: AppTypography.labelMd
-                                .copyWith(color: AppColors.secondary)),
-                    ],
-                  ),
-                ] else
-                  Text('Bạn chưa có quyền Xem dữ liệu tài chính.',
-                      style: AppTypography.bodySm),
-                const SizedBox(height: 4),
-                Text(
-                    '${family.members.length} thành viên${family.foundedLabel.isEmpty ? '' : '  ·  ${family.foundedLabel}'}',
-                    style: AppTypography.labelSm
-                        .copyWith(color: AppColors.outline)),
+                ],
                 const SizedBox(height: 14),
                 if (family.canWrite || family.isOwner)
                   Row(
@@ -139,6 +200,8 @@ class FamilyDetailScreen extends StatelessWidget {
                           child: _QuickAction(
                             icon: Icons.account_tree_outlined,
                             label: 'Thêm danh mục',
+                            tint: HomeTabColors.sageTint,
+                            accent: HomeTabColors.sage,
                             onTap: () =>
                                 promptCreateCategory(context, familyId),
                           ),
@@ -151,52 +214,79 @@ class FamilyDetailScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _SectionCard(
             icon: Icons.diversity_3,
-            title: 'Thành viên',
+            title: 'Thành viên (${family.members.length})',
             child: Column(
               children: [
-                if (family.isOwner)
-                  Wrap(
-                    spacing: 8,
+                if (family.isOwner) ...[
+                  Row(
                     children: [
-                      TextButton.icon(
-                        icon: const Icon(Icons.person_add_alt),
-                        onPressed: () => addFamilyMember(context, familyId),
-                        label: const Text('Thêm thành viên'),
-                      ),
-                      if (family.code.isNotEmpty)
-                        TextButton.icon(
-                          icon: const Icon(Icons.link),
-                          onPressed: () => showInviteCode(context, family.code),
-                          label: const Text('Mã mời'),
+                      Expanded(
+                        child: _OutlineAction(
+                          icon: Icons.person_add_alt,
+                          label: 'Thêm thành viên',
+                          tint: HomeTabColors.sageTint,
+                          accent: HomeTabColors.sage,
+                          onTap: () => addFamilyMember(context, familyId),
                         ),
+                      ),
+                      if (family.code.isNotEmpty) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _OutlineAction(
+                            icon: Icons.link,
+                            label: 'Mã mời',
+                            tint: HomeTabColors.wheatTint,
+                            accent: HomeTabColors.amber,
+                            onTap: () => showInviteCode(context, family.code),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
+                  const SizedBox(height: 12),
+                ],
                 for (final member in family.members)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLowest,
+                      border:
+                          Border.all(color: HomeTabColors.border, width: 1.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     child: Row(
                       children: [
                         CircleAvatar(
-                          radius: 16,
+                          radius: 18,
                           backgroundColor: AppColors.pastelLavender,
                           child: Text(member.initials,
                               style: AppTypography.labelMd
                                   .copyWith(color: AppColors.onSurface)),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 12),
                         Expanded(
-                            child:
-                                Text(member.name, style: AppTypography.bodyMd)),
+                            child: Text(member.name,
+                                style: AppTypography.titleSm)),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceContainerLow,
+                            color: member.role == MemberRole.owner
+                                ? HomeTabColors.sageTint
+                                : HomeTabColors.neutral,
+                            border: Border.all(
+                                color: member.role == MemberRole.owner
+                                    ? HomeTabColors.sage.withValues(alpha: 0.4)
+                                    : HomeTabColors.border),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(member.role.label,
-                              style: AppTypography.labelSm
-                                  .copyWith(color: AppColors.onSurfaceVariant)),
+                              style: AppTypography.labelSm.copyWith(
+                                  color: member.role == MemberRole.owner
+                                      ? HomeTabColors.sage
+                                      : AppColors.onSurfaceVariant)),
                         ),
                         if (family.isOwner && member.role != MemberRole.owner)
                           MemberManagementMenu(
@@ -317,17 +407,48 @@ class _CategoryLockButton extends StatelessWidget {
   }
 }
 
+class _HeaderChip extends StatelessWidget {
+  const _HeaderChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceContainerLowest,
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: AppColors.primary),
+            const SizedBox(width: 4),
+            Text(label,
+                style:
+                    AppTypography.labelSm.copyWith(color: AppColors.primary)),
+          ],
+        ),
+      );
+}
+
 class _QuickAction extends StatelessWidget {
   const _QuickAction(
       {required this.icon,
       required this.label,
       required this.onTap,
-      this.filled = false});
+      this.filled = false,
+      this.tint,
+      this.accent});
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool filled;
+  final Color? tint;
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
@@ -337,23 +458,75 @@ class _QuickAction extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: filled ? AppColors.primary : AppColors.surfaceContainerLowest,
+          color: filled
+              ? AppColors.primary
+              : (tint ?? AppColors.surfaceContainerLowest),
+          border: Border.all(
+              color: filled
+                  ? AppColors.primaryDark
+                  : (accent ?? AppColors.primary).withValues(alpha: 0.6),
+              width: 1.5),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           children: [
             Icon(icon,
-                size: 18, color: filled ? Colors.white : AppColors.primary),
+                size: 18,
+                color: filled ? Colors.white : (accent ?? AppColors.primary)),
             const SizedBox(height: 4),
             Text(label,
                 textAlign: TextAlign.center,
-                style: AppTypography.labelSm.copyWith(
-                    color: filled ? Colors.white : AppColors.onSurfaceVariant)),
+                style: AppTypography.labelMd.copyWith(
+                    color: filled
+                        ? Colors.white
+                        : (accent ?? AppColors.onSurfaceVariant))),
           ],
         ),
       ),
     );
   }
+}
+
+class _OutlineAction extends StatelessWidget {
+  const _OutlineAction(
+      {required this.icon,
+      required this.label,
+      required this.tint,
+      required this.accent,
+      required this.onTap});
+
+  final IconData icon;
+  final String label;
+  final Color tint;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 8),
+          decoration: BoxDecoration(
+            color: tint,
+            border:
+                Border.all(color: accent.withValues(alpha: 0.6), width: 1.5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: accent),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(label,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.labelMd.copyWith(color: accent)),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class _SectionCard extends StatelessWidget {
@@ -399,33 +572,35 @@ class _TransactionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isExpense = transaction.type == TransactionType.expense;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(transaction.content,
-                style: AppTypography.bodySm, overflow: TextOverflow.ellipsis),
-          ),
-          Text(
-            '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)} đ',
-            style: AppTypography.labelMd.copyWith(
-                color: isExpense ? AppColors.primary : AppColors.secondary),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: transaction.status == TransactionStatus.approve
-                  ? AppColors.secondaryContainer
-                  : AppColors.pastelBlush,
-              borderRadius: BorderRadius.circular(999),
+    return InkWell(
+      onTap: () => Navigator.of(context).pushNamed(AppRoutes.transactionDetail,
+          arguments: transaction.transactionId),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(transaction.content,
+                  style: AppTypography.bodySm, overflow: TextOverflow.ellipsis),
             ),
-            child: Text(transaction.status.label,
-                style: AppTypography.labelSm
-                    .copyWith(color: AppColors.onSurfaceVariant)),
-          ),
-        ],
+            Text(
+              '${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)} đ',
+              style: AppTypography.labelMd.copyWith(
+                  color: isExpense ? AppColors.primary : AppColors.secondary),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: transaction.status.background,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(transaction.status.label,
+                  style: AppTypography.labelSm
+                      .copyWith(color: AppColors.onSurfaceVariant)),
+            ),
+          ],
+        ),
       ),
     );
   }
