@@ -65,8 +65,7 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
   final emergency = TextEditingController();
   final approval = TextEditingController();
 
-  double? parse(TextEditingController c) =>
-      parseCurrencyInput(c.text);
+  double? parse(TextEditingController c) => parseCurrencyInput(c.text);
 
   Widget field(TextEditingController c, String label,
           {required IconData icon,
@@ -74,45 +73,66 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
           bool number = true,
           bool last = false}) =>
       Padding(
-        padding: EdgeInsets.only(bottom: last ? 0 : 12),
-        child: TextField(
-          controller: c,
-          textInputAction: last ? TextInputAction.done : TextInputAction.next,
-          keyboardType: number ? TextInputType.number : TextInputType.text,
-          textCapitalization:
-              number ? TextCapitalization.none : TextCapitalization.sentences,
-          inputFormatters: number ? const [CurrencyInputFormatter()] : null,
-          decoration: InputDecoration(
-            labelText: label,
-            hintText: hint,
-            prefixIcon: Icon(icon, size: 20, color: AppColors.primary),
-            suffixText: number ? 'đ' : null,
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: AppColors.surfaceContainer),
+        padding: EdgeInsets.only(bottom: last ? 0 : 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 10),
+              child: Text(label,
+                  style: AppTypography.bodyMd.copyWith(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.onSurface)),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+            TextField(
+              controller: c,
+              style: AppTypography.titleSm
+                  .copyWith(fontSize: 18, fontWeight: FontWeight.w500),
+              textInputAction:
+                  last ? TextInputAction.done : TextInputAction.next,
+              keyboardType: number ? TextInputType.number : TextInputType.text,
+              textCapitalization: number
+                  ? TextCapitalization.none
+                  : TextCapitalization.sentences,
+              inputFormatters: number ? const [CurrencyInputFormatter()] : null,
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: AppTypography.bodyMd.copyWith(
+                    fontSize: 16,
+                    color: AppColors.onSurfaceVariant.withValues(alpha: 0.6)),
+                suffixStyle: AppTypography.titleSm
+                    .copyWith(fontSize: 18, color: AppColors.onSurfaceVariant),
+                prefixIcon: Icon(icon, size: 26, color: AppColors.primary),
+                suffixText: number ? 'đ' : null,
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: AppColors.surfaceContainer),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       );
 
   Widget section(String title, String subtitle) => Padding(
-        padding: const EdgeInsets.only(top: 18, bottom: 10),
+        padding: const EdgeInsets.only(top: 36, bottom: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: AppTypography.titleSm),
-            const SizedBox(height: 2),
+            Text(title, style: AppTypography.titleSm.copyWith(fontSize: 20)),
+            const SizedBox(height: 6),
             Text(subtitle,
-                style: AppTypography.bodySm
-                    .copyWith(color: AppColors.onSurfaceVariant)),
+                style: AppTypography.bodyMd
+                    .copyWith(fontSize: 15, color: AppColors.onSurfaceVariant)),
           ],
         ),
       );
@@ -140,15 +160,17 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
                       color: AppColors.pastelBlush,
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(Icons.savings_outlined,
-                        color: AppColors.primary),
+                    child:
+                        Icon(Icons.savings_outlined, color: AppColors.primary),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Thêm danh mục', style: AppTypography.headlineSm),
+                        Text('Thêm danh mục',
+                            style: AppTypography.headlineSm
+                                .copyWith(fontSize: 22)),
                       ],
                     ),
                   ),
@@ -157,11 +179,12 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
             ),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    section('Thông tin chung', 'Tên và định mức ban đầu của hũ.'),
+                    section(
+                        'Thông tin chung', 'Tên và định mức ban đầu của hũ.'),
                     field(name, 'Tên danh mục',
                         icon: Icons.label_outline,
                         hint: 'Ví dụ: Ăn uống',
@@ -173,7 +196,8 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
                     section('Ngưỡng cảnh báo',
                         'Để trống sẽ dùng giá trị gợi ý theo định mức.'),
                     field(warning, 'Cảnh báo khi chi đến',
-                        icon: Icons.warning_amber_rounded, hint: '80% định mức'),
+                        icon: Icons.warning_amber_rounded,
+                        hint: '80% định mức'),
                     field(emergency, 'Khẩn cấp khi chi đến',
                         icon: Icons.error_outline, hint: '100% định mức'),
                     field(approval, 'Cần duyệt khi mỗi lần chi từ',
@@ -193,7 +217,8 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
                       onPressed: () => Navigator.of(dialogContext).pop(false),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
-                        minimumSize: const Size.fromHeight(48),
+                        minimumSize: const Size.fromHeight(58),
+                        textStyle: AppTypography.titleSm.copyWith(fontSize: 17),
                         side: BorderSide(color: AppColors.surfaceContainer),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999)),
@@ -208,11 +233,12 @@ Future<void> promptCreateCategory(BuildContext context, int familyId) async {
                       onPressed: () => Navigator.of(dialogContext).pop(true),
                       style: FilledButton.styleFrom(
                         backgroundColor: AppColors.primary,
-                        minimumSize: const Size.fromHeight(48),
+                        minimumSize: const Size.fromHeight(54),
+                        textStyle: AppTypography.titleSm,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999)),
                       ),
-                      icon: const Icon(Icons.add, size: 18),
+                      icon: const Icon(Icons.add, size: 22),
                       label: const Text('Thêm danh mục'),
                     ),
                   ),

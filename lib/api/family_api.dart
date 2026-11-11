@@ -26,9 +26,8 @@ class FamilyApi {
     return FamilyDetailModel.fromJson(res.data as Map<String, dynamic>);
   }
 
-  Future<void> addMember(int familyId, String username) async {
-    await apiClient
-        .post('/families/$familyId/members', data: {'username': username});
+  Future<void> addMember(int familyId, String email) async {
+    await apiClient.post('/families/$familyId/members', data: {'email': email});
   }
 
   Future<void> removeMember(int familyId, int personId) async {
