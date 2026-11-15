@@ -43,6 +43,32 @@ class RegistrationValidators {
     return null;
   }
 
+  static String? email(String? value) {
+    final email = (value ?? '').trim();
+    if (email.isEmpty) return 'Vui lòng nhập email.';
+    final parts = email.split('@');
+    if (email.length > 254 ||
+        parts.length != 2 ||
+        parts[0].isEmpty ||
+        parts[0].length > 64 ||
+        parts[0].startsWith('.') ||
+        parts[0].endsWith('.') ||
+        parts[0].contains('..') ||
+        !RegExp(r"^[A-Za-z0-9!#$%&'*+/=?^_`{|}~.-]+$").hasMatch(parts[0])) {
+      return 'Email không đúng định dạng.';
+    }
+    final labels = parts[1].split('.');
+    if (labels.length < 2 ||
+        labels.last.length < 2 ||
+        parts[1].length > 253 ||
+        labels.any((label) =>
+            !RegExp(r'^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$')
+                .hasMatch(label))) {
+      return 'Email không đúng định dạng.';
+    }
+    return null;
+  }
+
   static String normalizePhone(String value) {
     final phone = value.replaceAll(RegExp(r'[\s().-]'), '');
     return phone.startsWith('+84') ? '0${phone.substring(3)}' : phone;

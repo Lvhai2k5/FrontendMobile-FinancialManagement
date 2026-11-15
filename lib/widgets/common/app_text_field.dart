@@ -26,7 +26,7 @@ class AppTextField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final String hintText;
-  final IconData prefixIcon;
+  final IconData? prefixIcon;
   final bool obscureText;
   final VoidCallback? onToggleObscure;
   final TextInputType? keyboardType;
@@ -68,7 +68,9 @@ class AppTextField extends StatelessWidget {
             hintStyle: AppTypography.bodyMd.copyWith(color: AppColors.outline),
             filled: true,
             fillColor: AppColors.surfaceContainerLow,
-            prefixIcon: Icon(prefixIcon, size: 20, color: AppColors.primary),
+            prefixIcon: prefixIcon == null
+                ? null
+                : Icon(prefixIcon, size: 20, color: AppColors.primary),
             suffixText: suffixText,
             suffixStyle: AppTypography.titleSm.copyWith(color: AppColors.primary),
             suffixIcon: onToggleObscure == null

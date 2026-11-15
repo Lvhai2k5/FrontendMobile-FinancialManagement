@@ -110,7 +110,7 @@ void main() {
     expect(find.text('Tạo tài khoản mới'), findsOneWidget);
     expect(find.textContaining('✨'), findsNothing);
     expect(find.byIcon(Icons.account_circle_outlined), findsOneWidget);
-    expect(tester.widget<Text>(find.text('Gmail')).style?.fontSize, 16);
+    expect(tester.widget<Text>(find.text('Email')).style?.fontSize, 16);
     await capture(tester, 'register');
     final submit = find.text('Tạo tài khoản ngay');
     await tester.ensureVisible(submit);
@@ -118,7 +118,7 @@ void main() {
     await tester.pumpAndSettle();
     for (final error in [
       'Vui lòng nhập họ và tên.',
-      'Vui lòng nhập Gmail.',
+      'Vui lòng nhập email.',
       'Vui lòng nhập số điện thoại.',
       'Vui lòng nhập tên tài khoản.',
       'Vui lòng nhập mật khẩu.',
@@ -130,10 +130,10 @@ void main() {
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(1), 'sai-email');
     await tester.pumpAndSettle();
-    expect(find.textContaining('Gmail không đúng định dạng'), findsOneWidget);
-    await tester.enterText(fields.at(1), 'finnest.review@gmail.com');
+    expect(find.text('Email không đúng định dạng.'), findsOneWidget);
+    await tester.enterText(fields.at(1), 'finnest.review@yahoo.com');
     await tester.pumpAndSettle();
-    expect(find.textContaining('Gmail không đúng định dạng'), findsNothing);
+    expect(find.text('Email không đúng định dạng.'), findsNothing);
     await tester.ensureVisible(find.text('Họ và tên'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
@@ -147,7 +147,7 @@ void main() {
     final fields = find.byType(TextFormField);
     const values = [
       'Nguyễn An',
-      'finnest.review@gmail.com',
+      'finnest.review@yahoo.com',
       '0912 345 678',
       'review_user',
       'Abc12345',
@@ -187,8 +187,7 @@ void main() {
       (tester) async {
     await openRegistration(tester, _RegistrationApi(),
         size: const Size(360, 800), textScale: 1.3);
-    for (final field
-        in tester.widgetList<TextField>(find.byType(TextField))) {
+    for (final field in tester.widgetList<TextField>(find.byType(TextField))) {
       expect(field.decoration?.helperText, isNull);
     }
     final consent = find.byKey(const ValueKey('register-consent'));

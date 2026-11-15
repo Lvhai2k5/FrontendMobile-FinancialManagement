@@ -1,20 +1,28 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../api/auth_api.dart';
 import '../constants/app_constants.dart';
 import '../models/auth_model.dart';
+import '../services/google_identity_provider.dart';
 
 /// Logic đăng nhập: gọi `AuthApi`, lưu token qua `flutter_secure_storage`,
 /// báo `screens/` cập nhật UI qua `notifyListeners()`.
 class AuthProvider with ChangeNotifier {
-  AuthProvider({AuthApi? authApi, FlutterSecureStorage? secureStorage})
-      : _authApi = authApi ?? AuthApi(),
-        _secureStorage = secureStorage ?? const FlutterSecureStorage();
+  AuthProvider({
+    AuthApi? authApi,
+    FlutterSecureStorage? secureStorage,
+    GoogleIdentityProvider? googleIdentityProvider,
+  })  : _authApi = authApi ?? AuthApi(),
+        _secureStorage = secureStorage ?? const FlutterSecureStorage(),
+        _googleIdentityProvider =
+            googleIdentityProvider ?? GoogleSignInIdentityProvider();
 
   final AuthApi _authApi;
   final FlutterSecureStorage _secureStorage;
+  final GoogleIdentityProvider _googleIdentityProvider;
 
   bool loading = false;
   String? errorMessage;
@@ -29,23 +37,68 @@ class AuthProvider with ChangeNotifier {
       final response = await _authApi.login(
         LoginRequest(username: username, password: password),
       );
-      await _secureStorage.write(
-        key: AppConstants.accessTokenKey,
-        value: response.accessToken,
-      );
-      await _secureStorage.write(
-        key: AppConstants.refreshTokenKey,
-        value: response.refreshToken,
-      );
-      loading = false;
-      notifyListeners();
+      await _storeTokens(response);
       return true;
     } on DioException catch (e) {
-      loading = false;
       errorMessage = _mapError(e);
       notifyListeners();
       return false;
+    } catch (_) {
+      errorMessage = AppConstants.genericErrorMessage;
+      return false;
+    } finally {
+      loading = false;
+      notifyListeners();
     }
+  }
+
+  Future<bool> loginWithGoogle() async {
+    loading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final idToken = await _googleIdentityProvider.getIdToken();
+      if (idToken == null || idToken.isEmpty) {
+        errorMessage = 'Google không trả về mã xác thực. Vui lòng thử lại.';
+        return false;
+      }
+      final response = await _authApi.loginWithGoogle(
+        GoogleLoginRequest(idToken: idToken),
+      );
+      await _storeTokens(response);
+      return true;
+    } on DioException catch (e) {
+      errorMessage = _mapError(e);
+      return false;
+    } on GoogleSignInException catch (e) {
+      if (e.code.name == 'canceled') return false;
+      errorMessage = e.code.name == 'clientConfigurationError'
+          ? 'Đăng nhập Google chưa được cấu hình cho ứng dụng này.'
+          : 'Không thể xác thực Google. Vui lòng thử lại.';
+      return false;
+    } on GoogleAuthConfigurationException {
+      errorMessage =
+          'Thiếu GOOGLE_SERVER_CLIENT_ID. Hãy cấu hình OAuth client ID để đăng nhập Google.';
+      return false;
+    } catch (_) {
+      errorMessage = 'Không thể đăng nhập bằng Google. Vui lòng thử lại.';
+      return false;
+    } finally {
+      loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _storeTokens(AuthResponse response) async {
+    await _secureStorage.write(
+      key: AppConstants.accessTokenKey,
+      value: response.accessToken,
+    );
+    await _secureStorage.write(
+      key: AppConstants.refreshTokenKey,
+      value: response.refreshToken,
+    );
   }
 
   /// Đăng ký: trả về `null` nếu thành công, ngược lại là message lỗi để hiển thị.
@@ -107,12 +160,15 @@ class AuthProvider with ChangeNotifier {
     if (e.response == null) {
       return AppConstants.networkErrorMessage;
     }
-    if (e.response?.statusCode == 401) {
-      return AppConstants.invalidCredentialsMessage;
-    }
     final serverMessage = e.response?.data is Map
         ? (e.response?.data as Map)['message'] as String?
         : null;
-    return serverMessage ?? AppConstants.genericErrorMessage;
+    if (serverMessage != null && serverMessage.trim().isNotEmpty) {
+      return serverMessage;
+    }
+    if (e.response?.statusCode == 401) {
+      return AppConstants.invalidCredentialsMessage;
+    }
+    return AppConstants.genericErrorMessage;
   }
 }

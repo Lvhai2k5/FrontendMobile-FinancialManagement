@@ -4,13 +4,12 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
+import '../../utils/registration_validators.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../otp/otp_verify_screen.dart';
 
-/// Bước 1 của luồng Quên mật khẩu: nhập email đã đăng ký để nhận OTP. Backend
-/// chưa có endpoint gửi OTP quên mật khẩu — bấm gửi sẽ chuyển thẳng sang màn
-/// OTP (mã demo cố định, xem `OtpVerifyScreen`).
+/// Bước 1 của luồng quên mật khẩu: yêu cầu backend gửi OTP qua email.
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
 
@@ -30,14 +29,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _handleSend() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty || !email.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng nhập đúng định dạng email.'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: AppColors.error,
-        ),
-      );
+    final validationError = RegistrationValidators.email(email);
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(validationError),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.error,
+      ));
       return;
     }
     final error =
@@ -62,6 +60,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loading = context.watch<AuthProvider>().loading;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -101,21 +100,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 child: Column(
                   children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: const BoxDecoration(
-                        color: AppColors.surfaceContainerLow,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.vpn_key_outlined,
-                          color: AppColors.primary),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Quên mật khẩu? 🔑', style: AppTypography.headlineSm),
+                    Text('Quên mật khẩu?', style: AppTypography.headlineSm),
                     const SizedBox(height: 8),
                     Text(
-                      'Nhập email đã đăng ký để nhận mã xác thực đặt lại mật khẩu.',
+                      'Nhập email tài khoản để nhận mã đặt lại mật khẩu.',
                       textAlign: TextAlign.center,
                       style: AppTypography.bodyMd
                           .copyWith(color: AppColors.onSurfaceVariant),
@@ -125,16 +113,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       label: 'Email đăng ký',
                       controller: _emailController,
                       hintText: 'example@email.com',
-                      prefixIcon: Icons.mail_outline,
+                      prefixIcon: null,
                       keyboardType: TextInputType.emailAddress,
                       autofillHints: const [AutofillHints.email],
                     ),
                     const SizedBox(height: 20),
                     AppButton(
-                      label: 'Gửi mã xác nhận',
+                      label: loading ? 'Đang gửi mã...' : 'Gửi mã xác nhận',
                       trailingIcon: Icons.arrow_forward,
                       backgroundColor: AppColors.primaryContainer,
-                      onPressed: _handleSend,
+                      onPressed: loading ? () {} : _handleSend,
                     ),
                     if (_sent) ...[
                       const SizedBox(height: 12),
@@ -153,7 +141,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Đã gửi mã thành công! Vui lòng kiểm tra hộp thư.',
+                              'Nếu email có tài khoản, mã sẽ được gửi. Hãy kiểm tra cả mục Thư rác.',
                                 style: AppTypography.bodySm.copyWith(
                                     color: AppColors.onSurfaceVariant),
                               ),
@@ -168,11 +156,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               const SizedBox(height: 24),
               GestureDetector(
                 onTap: () => Navigator.of(context).maybePop(),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
                   children: [
                     Icon(Icons.arrow_back, size: 16, color: AppColors.outline),
-                    const SizedBox(width: 6),
                     Text('Nhớ lại mật khẩu? Quay lại đăng nhập',
                         style: AppTypography.labelMd
                             .copyWith(color: AppColors.onSurfaceVariant)),

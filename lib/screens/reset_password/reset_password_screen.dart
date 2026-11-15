@@ -96,6 +96,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loading = context.watch<AuthProvider>().loading;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -155,10 +156,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                     ),
                     const SizedBox(height: 20),
                     AppButton(
-                      label: 'Lưu mật khẩu mới',
+                      label: loading ? 'Đang cập nhật...' : 'Lưu mật khẩu mới',
                       trailingIcon: Icons.check,
                       backgroundColor: AppColors.primaryContainer,
-                      onPressed: _handleSubmit,
+                      onPressed: loading ? () {} : _handleSubmit,
                     ),
                   ],
                 ),

@@ -63,12 +63,6 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
     super.dispose();
   }
 
-  String _maskedEmail(String email) {
-    final at = email.indexOf('@');
-    if (at <= 1) return email;
-    return '${email.substring(0, 1)}***${email.substring(at)}';
-  }
-
   String get _purposeKey => widget.args.purpose == OtpPurpose.register
       ? 'REGISTER'
       : 'RESET_PASSWORD';
@@ -140,6 +134,7 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loading = context.watch<AuthProvider>().loading;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -179,46 +174,46 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                 ),
                 child: Column(
                   children: [
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLow,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.mark_email_read_outlined,
-                          color: AppColors.primary, size: 28),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('Xác thực mã OTP ✉️', style: AppTypography.headlineSm),
+                    Text('Xác thực mã OTP', style: AppTypography.headlineSm),
                     const SizedBox(height: 8),
                     Text(
-                      'Mã xác thực 6 chữ số đã được gửi đến email của bạn:',
+                      'Nhập mã 6 chữ số được gửi đến địa chỉ email:',
                       textAlign: TextAlign.center,
                       style: AppTypography.bodyMd
                           .copyWith(color: AppColors.onSurfaceVariant),
                     ),
                     const SizedBox(height: 4),
-                    Text(_maskedEmail(widget.args.email),
-                        style: AppTypography.titleSm),
+                    SelectableText(
+                      widget.args.email,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.titleSm.copyWith(
+                        color: AppColors.onSurface,
+                      ),
+                    ),
                     const SizedBox(height: 24),
                     OtpInput(onCompleted: (code) => _code = code),
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
+                      runSpacing: 4,
                       children: [
                         Icon(Icons.schedule,
                             size: 16, color: AppColors.outline),
-                        const SizedBox(width: 6),
                         Text('Chưa nhận được mã? ',
                             style: AppTypography.bodySm
                                 .copyWith(color: AppColors.onSurfaceVariant)),
                         GestureDetector(
-                          onTap: _secondsLeft == 0 ? _handleResend : null,
+                          onTap: _secondsLeft == 0 && !loading
+                              ? _handleResend
+                              : null,
                           child: Text(
-                            _secondsLeft == 0
+                            _secondsLeft == 0 && !loading
                                 ? 'Gửi lại mã'
-                                : 'Gửi lại sau (${_secondsLeft}s)',
+                                : loading
+                                    ? 'Đang xử lý...'
+                                    : 'Gửi lại sau (${_secondsLeft}s)',
                             style: AppTypography.labelMd.copyWith(
                               color: _secondsLeft == 0
                                   ? AppColors.primary
@@ -230,10 +225,10 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
                     ),
                     const SizedBox(height: 20),
                     AppButton(
-                      label: 'Xác nhận mã OTP',
+                      label: loading ? 'Đang xác nhận...' : 'Xác nhận mã OTP',
                       trailingIcon: Icons.arrow_forward,
                       backgroundColor: AppColors.primaryContainer,
-                      onPressed: _handleConfirm,
+                      onPressed: loading ? () {} : _handleConfirm,
                     ),
                     const SizedBox(height: 12),
                     Container(
@@ -265,11 +260,12 @@ class _OtpVerifyScreenState extends State<OtpVerifyScreen> {
               const SizedBox(height: 24),
               GestureDetector(
                 onTap: () => Navigator.of(context).maybePop(),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
                   children: [
                     Icon(Icons.arrow_back, size: 16, color: AppColors.outline),
-                    const SizedBox(width: 6),
                     Text('Quay lại',
                         style: AppTypography.labelMd
                             .copyWith(color: AppColors.onSurfaceVariant)),
