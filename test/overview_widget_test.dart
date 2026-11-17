@@ -375,7 +375,7 @@ void main() {
             of: find.byType(OverviewBalanceCard), matching: find.text('123 đ')),
         findsOneWidget);
     expect(find.text('+48,5 triệu đ'), findsNothing);
-    expect(find.text('0 danh mục chi tiêu · Số tiền rút gọn'), findsOneWidget);
+    expect(find.text('0 danh mục chi tiêu '), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

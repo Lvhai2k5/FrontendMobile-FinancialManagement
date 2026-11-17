@@ -5,6 +5,7 @@ import '../../widgets/layout/home_tab_header.dart';
 import '../../models/family_model.dart';
 import '../../utils/format_currency.dart';
 import '../../utils/overview_summary.dart';
+import '../../models/overview_model.dart';
 import '../../utils/category_usage_status.dart';
 import '../../widgets/family/category_progress_tile.dart';
 
@@ -15,10 +16,10 @@ class OverviewBalanceCard extends StatelessWidget {
   const OverviewBalanceCard(
       {super.key,
       required this.family,
-      required this.summary,
+      required this.overview,
       required this.reportAvailable});
   final FamilyDetailModel family;
-  final OverviewSummary summary;
+  final OverviewModel? overview;
   final bool reportAvailable;
 
   @override
@@ -114,8 +115,12 @@ class OverviewBalanceCard extends StatelessWidget {
                 child: FittedBox(
                   alignment: AlignmentDirectional.centerEnd,
                   fit: BoxFit.scaleDown,
-                  child: Text('${formatCurrency(family.totalBudget)} đ',
-                      style: AppTypography.amountMd),
+                  child: Text(
+                    overview == null
+                        ? '—'
+                        : '${formatCurrency(overview?.balance ?? 0)} đ',
+                    style: AppTypography.amountMd,
+                  ),
                 ),
               ),
             ],
@@ -123,9 +128,9 @@ class OverviewBalanceCard extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: _stat('Thu trong kỳ', summary.income, '+')),
+          Expanded(child: _stat('Tổng thu', overview?.income ?? 0, '+')),
           const SizedBox(width: 8),
-          Expanded(child: _stat('Chi trong kỳ', summary.expense, '−')),
+          Expanded(child: _stat('Tổng chi', overview?.expense ?? 0, '−')),
         ]),
       ]),
     );

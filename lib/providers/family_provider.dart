@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
 import '../api/family_api.dart';
 import '../models/family_model.dart';
+import '../models/overview_model.dart';
 import '../utils/api_error.dart';
 
 /// State + logic gia đình/danh mục/hạn mức. Dữ liệu lấy từ Backend qua
@@ -15,6 +18,9 @@ class FamilyProvider with ChangeNotifier {
   final List<FamilySummaryModel> _families = [];
   final Map<int, FamilyDetailModel> _details = {};
   final Map<int, List<ThresholdModel>> _thresholds = {};
+  final Map<int, OverviewModel> _overviews = {};
+  final Set<int> _overviewLoading = {};
+  final Map<int, String> _overviewErrors = {};
   int? _selectedFamilyId;
 
   int _loadVersion = 0;
@@ -35,6 +41,15 @@ class FamilyProvider with ChangeNotifier {
   FamilyDetailModel? detail(int? familyId) =>
       familyId == null ? null : _details[familyId];
 
+  OverviewModel? overview(int? familyId) =>
+      familyId == null ? null : _overviews[familyId];
+
+  bool overviewLoading(int? familyId) =>
+      familyId != null && _overviewLoading.contains(familyId);
+
+  String? overviewError(int? familyId) =>
+      familyId == null ? null : _overviewErrors[familyId];
+
   List<ThresholdModel> thresholdsOf(int categoryId) =>
       List.unmodifiable(_thresholds[categoryId] ?? const []);
 
@@ -42,6 +57,23 @@ class FamilyProvider with ChangeNotifier {
     if (familyId == _selectedFamilyId) return;
     _selectedFamilyId = familyId;
     notifyListeners();
+    unawaited(loadOverview(familyId));
+  }
+
+  Future<void> loadOverview(int familyId) async {
+    _overviewLoading.add(familyId);
+    _overviewErrors.remove(familyId);
+    notifyListeners();
+    try {
+      _overviews[familyId] = await _api.overview(familyId);
+    } catch (e) {
+      _overviewErrors[familyId] = e is DioException && e.response?.statusCode == 403
+          ? 'Bạn không có quyền Xem dữ liệu gia đình này.'
+          : apiErrorMessage(e);
+    } finally {
+      _overviewLoading.remove(familyId);
+      notifyListeners();
+    }
   }
 
   /// Tải lại toàn bộ danh sách gia đình + chi tiết (hũ, thành viên, số dư).
@@ -80,6 +112,9 @@ class FamilyProvider with ChangeNotifier {
       if (_selectedFamilyId == null ||
           !_families.any((f) => f.familyId == _selectedFamilyId)) {
         _selectedFamilyId = _families.isEmpty ? null : _families.first.familyId;
+      }
+      if (_selectedFamilyId != null) {
+        await loadOverview(_selectedFamilyId!);
       }
     } catch (e) {
       if (version == _loadVersion) errorMessage = apiErrorMessage(e);
@@ -208,6 +243,9 @@ class FamilyProvider with ChangeNotifier {
     _families.clear();
     _details.clear();
     _thresholds.clear();
+    _overviews.clear();
+    _overviewLoading.clear();
+    _overviewErrors.clear();
     _selectedFamilyId = null;
     errorMessage = null;
     notifyListeners();
