@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:finance_management/config/theme.dart';
 import 'package:finance_management/models/family_model.dart';
+import 'package:finance_management/models/overview_model.dart';
 import 'package:finance_management/models/transaction_model.dart';
 import 'package:finance_management/providers/family_provider.dart';
 import 'package:finance_management/providers/notification_provider.dart';
@@ -113,6 +114,46 @@ class _Families extends FamilyProvider {
 
   @override
   int? get selectedFamilyId => _selection;
+  @override
+  OverviewModel? overview(int? familyId) {
+    if (familyId == 1) {
+      return OverviewModel(
+        familyId: 1,
+        balance: _family.totalBudget,
+        income: _family.totalIncome,
+        expense: _family.totalExpense,
+        categories: [
+          for (final category in _family.categories)
+            OverviewCategoryModel(
+              financialCategoryId: category.financialCategoryId,
+              name: category.name,
+              spent: category.spent,
+              limitAmount: category.limitAmount,
+              usagePercent: category.limitAmount == 0
+                  ? 0
+                  : category.spent * 100 / category.limitAmount,
+              status: category.status,
+              allocationPercent: category.allocationPercent,
+              amountOfWarning: category.amountOfWarning,
+              amountOfEmergency: category.amountOfEmergency,
+            ),
+        ],
+        recentTransactions: const [],
+      );
+    }
+    if (familyId == 2) {
+      return const OverviewModel(
+        familyId: 2,
+        balance: 123,
+        income: 0,
+        expense: 0,
+        categories: [],
+        recentTransactions: [],
+      );
+    }
+    return null;
+  }
+
   @override
   FamilyDetailModel? detail(int? familyId) => familyId == 1
       ? _family
@@ -250,26 +291,41 @@ void main() {
     expect(balanceLabel.dx, lessThan(balanceAmount.dx));
     expect(balanceLabel.dy, closeTo(balanceAmount.dy, 1));
     double avatarX(String initial) => tester
-        .getCenter(find.ancestor(
-          of: find.text(initial),
-          matching: find.byType(CircleAvatar),
-        ).first)
+        .getCenter(find
+            .ancestor(
+              of: find.text(initial),
+              matching: find.byType(CircleAvatar),
+            )
+            .first)
         .dx;
     expect(avatarX('L') - avatarX('M'), closeTo(13, 1));
     expect(find.text('+1'), findsOneWidget);
     expect(find.text('+48,5 triệu đ'), findsOneWidget);
     expect(find.text('−77,67 triệu đ'), findsOneWidget);
-    expect(find.text('Thu – chi theo tuần'), findsOneWidget);
     expect(find.text('Phân bổ dòng tiền'), findsOneWidget);
-    expect(find.text('Nhu cầu thiết yếu'), findsOneWidget);
+    expect(find.text('Thu – chi theo tuần'), findsNothing,
+        reason: 'Các mục trên Tổng Quan mặc định thu gọn.');
+    expect(find.text('Nhu cầu thiết yếu'), findsNothing);
     expect(find.byKey(const ValueKey('overview-amount-format')), findsNothing);
+    final chartSection = find.text('Biểu đồ thu chi');
+    await tester.ensureVisible(chartSection);
+    await tester.tap(chartSection);
+    await tester.pumpAndSettle();
+    expect(find.text('Thu – chi theo tuần'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    final jarSection = find.text('Phân bổ dòng tiền');
+    await tester.ensureVisible(jarSection);
+    await tester.tap(jarSection);
+    await tester.pumpAndSettle();
+    expect(find.text('Nhu cầu thiết yếu'), findsOneWidget);
+    expect(find.text('Số tiền rút gọn'), findsNothing);
+    expect(find.textContaining('Không theo bộ lọc ngày'), findsNothing);
     final comparison = find.text('So sánh với kỳ trước');
     await tester.ensureVisible(comparison);
     await tester.tap(comparison);
     await tester.pumpAndSettle();
     expect(find.text('-29.170.000 đ'), findsOneWidget);
     expect(find.textContaining('+-'), findsNothing);
-    expect(tester.takeException(), isNull);
     await tester.drag(
         find.byType(SingleChildScrollView).first, const Offset(0, 2000));
     await tester.pumpAndSettle();
@@ -280,7 +336,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Giao dịch trong kỳ'), findsOneWidget);
     expect(find.text('+48.500.000 đ'), findsOneWidget);
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('Mở lịch và áp dụng khoảng ngày thực sự lọc báo cáo',
@@ -313,8 +368,21 @@ void main() {
     await tester.tap(find.text('Áp dụng').last);
     await tester.pumpAndSettle();
     expect(find.byType(DateRangePickerDialog), findsNothing);
-    expect(find.text('−1 nghìn đ'), findsOneWidget);
-    expect(find.text('+48,5 triệu đ'), findsNothing);
+    expect(find.text('+48,5 triệu đ'), findsOneWidget,
+        reason:
+            'Tổng thu của API là số tích lũy; bộ lọc chỉ áp dụng cho báo cáo.');
+    await tester.tap(find.text('Biểu đồ thu chi'));
+    await tester.pumpAndSettle();
+    final details = find.text('Xem chi tiết →').last;
+    await tester.ensureVisible(details);
+    await tester.tap(details);
+    await tester.pumpAndSettle();
+    expect(find.text('−1.000 đ'), findsOneWidget);
+    expect(find.text('Chưa có giao dịch đã duyệt trong khoảng này.'),
+        findsNothing);
+    Navigator.of(tester.element(find.text('Giao dịch trong kỳ'))).pop();
+    await tester.pumpAndSettle();
+    expect(find.text('+48,5 triệu đ'), findsOneWidget);
     expect(find.text('61.830.000 đ'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -333,22 +401,42 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Tháng trước'));
     await tester.pumpAndSettle();
-    expect(find.text('−1 nghìn đ'), findsOneWidget);
-    expect(find.text('+48,5 triệu đ'), findsNothing);
+    expect(find.text('+48,5 triệu đ'), findsOneWidget,
+        reason: 'Kỳ lọc không làm thay đổi tổng thu tích lũy của endpoint.');
+    await tester.tap(find.text('Biểu đồ thu chi'));
+    await tester.pumpAndSettle();
+    final details = find.text('Xem chi tiết →').last;
+    await tester.ensureVisible(details);
+    await tester.tap(details);
+    await tester.pumpAndSettle();
+    expect(find.text('−1.000 đ'), findsOneWidget);
+    expect(find.text('Mua sách'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('Kỳ không có giao dịch có trạng thái rỗng', (tester) async {
     await open(tester, empty: true);
+    expect(find.text('Thu – chi theo tuần'), findsNothing);
+    await tester.tap(find.text('Biểu đồ thu chi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Thu – chi theo tuần'), findsOneWidget);
     expect(find.text('Chưa có giao dịch đã duyệt trong khoảng này.'),
-        findsOneWidget);
-    expect(find.text('+48,5 triệu đ'), findsNothing);
-    expect(find.text('0 đ'), findsWidgets);
+        findsNothing);
+    expect(find.text('Chưa có giao dịch đã duyệt.'), findsNothing);
+    expect(find.text('Giao dịch gần nhất'), findsNothing);
+    expect(find.text('Chưa có thu – chi trong khoảng này.'), findsNothing);
+    expect(find.text('Xem chi tiết →'), findsNothing);
+    expect(find.text('+48,5 triệu đ'), findsOneWidget,
+        reason:
+            'KPI trên card là tổng tích lũy; báo cáo kỳ rỗng hiển thị riêng.');
+    expect(find.text('Giao dịch minh họa'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('Hũ hiển thị tỷ lệ sử dụng và mở số đầy đủ', (tester) async {
     await open(tester);
+    await tester.tap(find.text('Phân bổ dòng tiền'));
+    await tester.pumpAndSettle();
     final jar = find.text('Nhu cầu thiết yếu');
     await tester.ensureVisible(jar);
     await tester.pumpAndSettle();
@@ -360,6 +448,7 @@ void main() {
     expect(find.text('Đã chi: 14.200.000 đ'), findsOneWidget);
     expect(find.text('Hạn mức: 22.000.000 đ'), findsOneWidget);
     expect(find.text('Tỷ trọng phân bổ: 50%'), findsOneWidget);
+    expect(find.textContaining('không phụ thuộc bộ lọc ngày'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -375,7 +464,11 @@ void main() {
             of: find.byType(OverviewBalanceCard), matching: find.text('123 đ')),
         findsOneWidget);
     expect(find.text('+48,5 triệu đ'), findsNothing);
-    expect(find.text('0 danh mục chi tiêu '), findsOneWidget);
+    expect(find.textContaining('0 danh mục chi tiêu'), findsNothing,
+        reason: 'Phần phân bổ mặc định thu gọn.');
+    await tester.tap(find.text('Phân bổ dòng tiền'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('0 danh mục chi tiêu'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

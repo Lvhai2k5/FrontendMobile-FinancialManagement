@@ -10,6 +10,9 @@ class OverviewCategoryModel {
     required this.limitAmount,
     required this.usagePercent,
     required this.status,
+    this.allocationPercent = 0,
+    this.amountOfWarning = 0,
+    this.amountOfEmergency = 0,
   });
 
   final int financialCategoryId;
@@ -18,6 +21,9 @@ class OverviewCategoryModel {
   final double limitAmount;
   final double usagePercent;
   final CategoryStatus status;
+  final int allocationPercent;
+  final double amountOfWarning;
+  final double amountOfEmergency;
 
   factory OverviewCategoryModel.fromJson(Map<String, dynamic> json) =>
       OverviewCategoryModel(
@@ -26,6 +32,9 @@ class OverviewCategoryModel {
         spent: asDouble(json['spent']),
         limitAmount: asDouble(json['limitAmount']),
         usagePercent: asDouble(json['usagePercent']),
+        allocationPercent: asInt(json['allocationPercent']),
+        amountOfWarning: asDouble(json['amountOfWarning']),
+        amountOfEmergency: asDouble(json['amountOfEmergency']),
         status: json['status'] == 'LOCKED'
             ? CategoryStatus.locked
             : CategoryStatus.active,
@@ -34,10 +43,12 @@ class OverviewCategoryModel {
   FinancialCategoryModel toCategory() => FinancialCategoryModel(
         financialCategoryId: financialCategoryId,
         name: name,
-        allocationPercent: 0,
+        allocationPercent: allocationPercent,
         spent: spent,
         limitAmount: limitAmount,
         status: status,
+        amountOfWarning: amountOfWarning,
+        amountOfEmergency: amountOfEmergency,
       );
 }
 
@@ -64,8 +75,8 @@ class OverviewModel {
         income: asDouble(json['income']),
         expense: asDouble(json['expense']),
         categories: ((json['categories'] as List?) ?? const [])
-            .map((item) => OverviewCategoryModel.fromJson(
-                item as Map<String, dynamic>))
+            .map((item) =>
+                OverviewCategoryModel.fromJson(item as Map<String, dynamic>))
             .toList(),
         recentTransactions: ((json['recentTransactions'] as List?) ?? const [])
             .map((item) =>

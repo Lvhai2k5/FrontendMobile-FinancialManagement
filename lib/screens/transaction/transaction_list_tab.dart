@@ -151,7 +151,7 @@ class _TransactionListTabState extends State<TransactionListTab> {
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
                   mainAxisExtent:
-                      54 + MediaQuery.textScalerOf(context).scale(48),
+                      54 + MediaQuery.textScalerOf(context).scale(56),
                   children: [
                     _MethodCard(
                       icon: Icons.edit_note,

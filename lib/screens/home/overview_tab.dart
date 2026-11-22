@@ -66,10 +66,6 @@ class _OverviewTabState extends State<OverviewTab> {
             Text('Giao dịch trong kỳ', style: AppTypography.headlineSm),
             const SizedBox(height: 8),
             Text(_dateLabel(), style: AppTypography.bodySm),
-            if (summary.transactions.isEmpty)
-              const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Text('Chưa có giao dịch đã duyệt trong khoảng này.')),
             for (final transaction in summary.transactions)
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -191,12 +187,11 @@ class _OverviewTabState extends State<OverviewTab> {
               )
             else if (overviewLoading && overview == null)
               const Center(child: CircularProgressIndicator())
-            else if (overview != null) ...[
+            else if (overview?.recentTransactions.isNotEmpty == true) ...[
               _OverviewSection(
                 title: 'Giao dịch gần nhất',
-                initiallyExpanded: true,
                 child: _RecentTransactions(
-                    transactions: overview.recentTransactions),
+                    transactions: overview!.recentTransactions),
               ),
               const SizedBox(height: 8),
             ],
@@ -208,14 +203,8 @@ class _OverviewTabState extends State<OverviewTab> {
                   onPressed: transactions.load,
                   child: const Text('Chưa tải được báo cáo. Thử lại'))
             else ...[
-              if (summary.transactions.isEmpty)
-                const Padding(
-                    padding: EdgeInsets.only(bottom: 12),
-                    child:
-                        Text('Chưa có giao dịch đã duyệt trong khoảng này.')),
               _OverviewSection(
                 title: 'Biểu đồ thu chi',
-                initiallyExpanded: true,
                 child: OverviewFlowChart(
                   buckets: overviewBuckets(
                       transactions.transactions, family.familyId, _range),
@@ -231,24 +220,23 @@ class _OverviewTabState extends State<OverviewTab> {
                     net: summary.net,
                     previous: previous,
                     earlier: earlier,
+                    hasTransactions: summary.transactions.isNotEmpty,
                     onDetails: () => _showTransactions(summary)),
               ),
             ],
             const SizedBox(height: 12),
             _OverviewSection(
               title: 'Phân bổ dòng tiền',
-              initiallyExpanded: true,
-                child: OverviewJars(
-                  categories: overview?.categories
-                          .map((category) => category.toCategory())
-                          .toList() ??
-                      const [],
-                ),
+              child: OverviewJars(
+                categories: overview?.categories
+                        .map((category) => category.toCategory())
+                        .toList() ??
+                    const [],
+              ),
             ),
             const SizedBox(height: 12),
             _OverviewSection(
               title: 'Đánh giá & dự đoán tài chính gia đình',
-              initiallyExpanded: true,
               child: _ForecastCard(
                 balance: overview?.balance ?? family.totalBudget,
                 expense: month.expense,
@@ -326,6 +314,7 @@ class _ReportComparisonCard extends StatelessWidget {
       required this.net,
       required this.previous,
       required this.earlier,
+      required this.hasTransactions,
       required this.onDetails});
 
   final double income;
@@ -333,6 +322,7 @@ class _ReportComparisonCard extends StatelessWidget {
   final double net;
   final OverviewSummary previous;
   final OverviewSummary earlier;
+  final bool hasTransactions;
   final VoidCallback onDetails;
 
   @override
@@ -434,10 +424,11 @@ class _ReportComparisonCard extends StatelessWidget {
                           net < 0 ? AppColors.primary : AppColors.secondary)),
             ],
           ),
-          Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                  onPressed: onDetails, child: const Text('Xem chi tiết →'))),
+          if (hasTransactions)
+            Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                    onPressed: onDetails, child: const Text('Xem chi tiết →'))),
         ],
       ),
     );
@@ -517,8 +508,7 @@ class _ForecastCard extends StatelessWidget {
                 ])),
           ]),
           const SizedBox(height: 12),
-          Text(
-              'Ước tính theo mức chi đã duyệt trong tháng.',
+          Text('Ước tính theo mức chi đã duyệt trong tháng.',
               style: AppTypography.bodySm
                   .copyWith(color: AppColors.onSurfaceVariant)),
         ]));

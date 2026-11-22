@@ -168,6 +168,8 @@ class OverviewFlowChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasTransactions =
+        buckets.any((bucket) => bucket.summary.transactions.isNotEmpty);
     final peak = buckets.fold<double>(
         0,
         (value, b) =>
@@ -250,6 +252,7 @@ class OverviewFlowChart extends StatelessWidget {
                 )),
             Expanded(
                 child: SingleChildScrollView(
+              key: const PageStorageKey<String>('overview-flow-chart-scroll'),
               scrollDirection: Axis.horizontal,
               child: SizedBox(
                   width: width,
@@ -311,16 +314,18 @@ class OverviewFlowChart extends StatelessWidget {
                 : 'Mỗi cặp cột tối đa 7 ngày; nhãn là ngày bắt đầu.',
             style: AppTypography.bodySm),
         const Divider(height: 24),
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.insights_outlined,
-              color: HomeTabColors.coral, size: 22),
-          const SizedBox(width: 8),
-          Expanded(child: Text(insight, style: AppTypography.bodyMd)),
-        ]),
-        Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-                onPressed: onDetails, child: const Text('Xem chi tiết →'))),
+        if (peak > 0)
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.insights_outlined,
+                color: HomeTabColors.coral, size: 22),
+            const SizedBox(width: 8),
+            Expanded(child: Text(insight, style: AppTypography.bodyMd)),
+          ]),
+        if (hasTransactions)
+          Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                  onPressed: onDetails, child: const Text('Xem chi tiết →'))),
       ]),
     );
   }
@@ -406,9 +411,6 @@ class OverviewJars extends StatelessWidget {
                       Text(category.amountOfEmergency > 0
                           ? 'Ngưỡng khẩn cấp: ${formatCurrency(category.amountOfEmergency)} đ'
                           : 'Ngưỡng khẩn cấp: Đã tắt'),
-                      const SizedBox(height: 12),
-                      const Text(
-                          'Số liệu danh mục là tổng đã chi do hệ thống ghi nhận, không phụ thuộc bộ lọc ngày báo cáo.'),
                     ]))));
   }
 
@@ -421,11 +423,9 @@ class OverviewJars extends StatelessWidget {
     final alertColor =
         hasRed ? AppColors.error : CategoryUsageStatus.warning.color;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('${categories.length} danh mục chi tiêu · Số tiền rút gọn',
+      Text('${categories.length} danh mục chi tiêu',
           style: AppTypography.bodySm),
       const SizedBox(height: 6),
-      Text('Tổng đã chi của danh mục · Không theo bộ lọc ngày',
-          style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
       const SizedBox(height: 12),
       if (categories.isNotEmpty) ...[
         Row(
