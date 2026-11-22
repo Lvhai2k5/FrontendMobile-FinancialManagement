@@ -211,7 +211,7 @@ void main() {
     expect(user.saved, isNull);
     expect(find.textContaining('Nhập họ tên bằng chữ'), findsOneWidget);
     expect(find.textContaining('Số điện thoại cần đúng'), findsOneWidget);
-    expect(find.textContaining('kết thúc bằng @gmail.com'), findsOneWidget);
+    expect(find.textContaining('kết thúc bằng @gmail.com'), findsNothing);
 
     await tester.enterText(fields.at(0), 'Nguyễn An');
     await tester.enterText(fields.at(1), '+84 912 345 678');
@@ -375,8 +375,16 @@ void main() {
       (tester) async {
     await open(tester, Families(List.generate(30, (i) => family(i + 1))));
     expect(find.text('Đang tham gia 30 gia đình'), findsOneWidget);
-    expect(find.text('Chủ hộ 1'), findsOneWidget);
-    expect(find.text('Thành viên 29'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('family-card-1')),
+            matching: find.text('Chủ hộ')),
+        findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('family-card-2')),
+            matching: find.text('Thành viên')),
+        findsOneWidget);
     expect(find.text('Tổ ấm thử nghiệm 30'), findsNothing);
     await capture(tester, 'family-multiple');
     await tester.scrollUntilVisible(

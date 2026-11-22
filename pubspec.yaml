@@ -43,6 +43,8 @@ dependencies:
   dio: ^5.7.0
   # Lưu token nhạy cảm (không dùng SharedPreferences)
   flutter_secure_storage: ^9.2.2
+  # OAuth ID token cho luồng đăng nhập Google.
+  google_sign_in: ^7.2.0
   # Font Outfit + Plus Jakarta Sans theo design system
   google_fonts: ^6.3.3
   # Ghi chi tiêu bằng giọng nói: STT native tiếng Việt trên thiết bị

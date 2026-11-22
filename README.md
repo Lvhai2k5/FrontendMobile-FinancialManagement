@@ -14,6 +14,16 @@ cd "D:\Nam Cuoi\Frontend-Mobile"
 Nếu Flutter đã có trong PATH, dùng `flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8081/api/v1`.
 Khi mở riêng repo mobile bằng VS Code, có thể chọn cấu hình **FinNest Mobile - Chrome (local backend)** trong Run and Debug.
 
+## Đăng nhập Google trên Android/iOS
+
+Tạo OAuth client cho ứng dụng Android/iOS trong Google Cloud Console (đúng package/bundle ID và signing SHA-1), đồng thời có **Web application client ID**. Truyền Web client ID cho app và cấu hình cùng audience đó ở backend (`app.google.client-id`):
+
+```powershell
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8081/api/v1 --dart-define=GOOGLE_SERVER_CLIENT_ID=YOUR_WEB_CLIENT_ID
+```
+
+Trên thiết bị thật, thay URL API bằng địa chỉ LAN của máy chạy backend. iOS cần đăng ký URL scheme bằng reversed iOS client ID trong Runner; Android cần package ID và signing SHA-1 khớp OAuth client. Đặt cùng Web client ID vào biến backend `GOOGLE_CLIENT_ID`. Không commit client secret; mobile chỉ dùng client ID công khai. Google login hiện yêu cầu email đã được liên kết với tài khoản FinNest ở backend.
+
 Chrome dùng `localhost:8081`; `10.0.2.2` dành cho máy ảo Android Studio. File `env.json` chứa cấu hình LAN cho APK/thiết bị khác; không dùng file đó khi chạy Chrome trên cùng máy. Địa chỉ LAN có thể đổi khi chuyển Wi-Fi.
 
 `API_BASE_URL` được đọc khi biên dịch. Sau khi đổi địa chỉ API, dừng phiên Flutter cũ và chạy lại lệnh; hot reload không thay đổi giá trị đã biên dịch.

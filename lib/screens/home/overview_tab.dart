@@ -66,10 +66,6 @@ class _OverviewTabState extends State<OverviewTab> {
             Text('Giao dịch trong kỳ', style: AppTypography.headlineSm),
             const SizedBox(height: 8),
             Text(_dateLabel(), style: AppTypography.bodySm),
-            if (summary.transactions.isEmpty)
-              const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Text('Chưa có giao dịch đã duyệt trong khoảng này.')),
             for (final transaction in summary.transactions)
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -95,6 +91,9 @@ class _OverviewTabState extends State<OverviewTab> {
     final family = families.detail(families.selectedFamilyId);
     if (family == null) return _EmptyOverview(loading: families.loading);
     final transactions = context.watch<TransactionProvider>();
+    final overview = families.overview(family.familyId);
+    final overviewLoading = families.overviewLoading(family.familyId);
+    final overviewError = families.overviewError(family.familyId);
     final summary =
         OverviewSummary(transactions.transactions, family.familyId, _range);
     DateTimeRange before(DateTimeRange range) {
@@ -131,7 +130,8 @@ class _OverviewTabState extends State<OverviewTab> {
             ),
           ),
           const SizedBox(height: 8),
-          if (!family.canRead)
+          if (!family.canRead ||
+              overviewError == 'Bạn không có quyền Xem dữ liệu gia đình này.')
             Text('Bạn chưa có quyền Xem dữ liệu của tổ ấm này.',
                 style: AppTypography.bodyMd)
           else ...[
@@ -169,9 +169,32 @@ class _OverviewTabState extends State<OverviewTab> {
             const SizedBox(height: 4),
             OverviewBalanceCard(
                 family: family,
-                summary: summary,
-                reportAvailable:
-                    !transactions.loading && transactions.errorMessage == null),
+                overview: overview,
+                reportAvailable: !overviewLoading && overviewError == null),
+            const SizedBox(height: 8),
+            if (overviewError != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(overviewError, style: AppTypography.bodyMd),
+                  if (overviewError !=
+                      'Bạn không có quyền Xem dữ liệu gia đình này.')
+                    TextButton(
+                      onPressed: () => families.loadOverview(family.familyId),
+                      child: const Text('Thử tải lại'),
+                    ),
+                ],
+              )
+            else if (overviewLoading && overview == null)
+              const Center(child: CircularProgressIndicator())
+            else if (overview?.recentTransactions.isNotEmpty == true) ...[
+              _OverviewSection(
+                title: 'Giao dịch gần nhất',
+                child: _RecentTransactions(
+                    transactions: overview!.recentTransactions),
+              ),
+              const SizedBox(height: 8),
+            ],
             const SizedBox(height: 20),
             if (transactions.loading)
               const Center(child: CircularProgressIndicator())
@@ -180,14 +203,8 @@ class _OverviewTabState extends State<OverviewTab> {
                   onPressed: transactions.load,
                   child: const Text('Chưa tải được báo cáo. Thử lại'))
             else ...[
-              if (summary.transactions.isEmpty)
-                const Padding(
-                    padding: EdgeInsets.only(bottom: 12),
-                    child:
-                        Text('Chưa có giao dịch đã duyệt trong khoảng này.')),
               _OverviewSection(
                 title: 'Biểu đồ thu chi',
-                initiallyExpanded: true,
                 child: OverviewFlowChart(
                   buckets: overviewBuckets(
                       transactions.transactions, family.familyId, _range),
@@ -203,25 +220,65 @@ class _OverviewTabState extends State<OverviewTab> {
                     net: summary.net,
                     previous: previous,
                     earlier: earlier,
+                    hasTransactions: summary.transactions.isNotEmpty,
                     onDetails: () => _showTransactions(summary)),
               ),
             ],
             const SizedBox(height: 12),
             _OverviewSection(
               title: 'Phân bổ dòng tiền',
-              initiallyExpanded: true,
-              child: OverviewJars(categories: family.categories),
+              child: OverviewJars(
+                categories: overview?.categories
+                        .map((category) => category.toCategory())
+                        .toList() ??
+                    const [],
+              ),
             ),
             const SizedBox(height: 12),
             _OverviewSection(
               title: 'Đánh giá & dự đoán tài chính gia đình',
-              initiallyExpanded: true,
               child: _ForecastCard(
-                  balance: family.totalBudget, expense: month.expense),
+                balance: overview?.balance ?? family.totalBudget,
+                expense: month.expense,
+              ),
             ),
           ],
         ]),
       ),
+    );
+  }
+}
+
+class _RecentTransactions extends StatelessWidget {
+  const _RecentTransactions({required this.transactions});
+
+  final List<TransactionModel> transactions;
+
+  @override
+  Widget build(BuildContext context) {
+    if (transactions.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Text('Chưa có giao dịch đã duyệt.'),
+      );
+    }
+    return Column(
+      children: [
+        for (final transaction in transactions)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(transaction.content),
+            subtitle: Text(transaction.categoryName),
+            trailing: Text(
+              '${transaction.type == TransactionType.income ? '+' : '−'}${formatCurrency(transaction.amount)} đ',
+              style: AppTypography.labelMd.copyWith(
+                color: transaction.type == TransactionType.income
+                    ? AppColors.secondary
+                    : AppColors.primary,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -257,6 +314,7 @@ class _ReportComparisonCard extends StatelessWidget {
       required this.net,
       required this.previous,
       required this.earlier,
+      required this.hasTransactions,
       required this.onDetails});
 
   final double income;
@@ -264,6 +322,7 @@ class _ReportComparisonCard extends StatelessWidget {
   final double net;
   final OverviewSummary previous;
   final OverviewSummary earlier;
+  final bool hasTransactions;
   final VoidCallback onDetails;
 
   @override
@@ -365,10 +424,11 @@ class _ReportComparisonCard extends StatelessWidget {
                           net < 0 ? AppColors.primary : AppColors.secondary)),
             ],
           ),
-          Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                  onPressed: onDetails, child: const Text('Xem chi tiết →'))),
+          if (hasTransactions)
+            Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                    onPressed: onDetails, child: const Text('Xem chi tiết →'))),
         ],
       ),
     );
@@ -448,8 +508,7 @@ class _ForecastCard extends StatelessWidget {
                 ])),
           ]),
           const SizedBox(height: 12),
-          Text(
-              'Ước tính theo mức chi đã duyệt trong tháng, chưa tính thu nhập sắp tới.',
+          Text('Ước tính theo mức chi đã duyệt trong tháng.',
               style: AppTypography.bodySm
                   .copyWith(color: AppColors.onSurfaceVariant)),
         ]));

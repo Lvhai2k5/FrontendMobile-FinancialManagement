@@ -95,8 +95,9 @@ class FamilyListTab extends StatelessWidget {
                                 icon: Icons.vpn_key_outlined,
                                 title: 'Nhập mã mời',
                                 subtitle: 'Tham gia tổ ấm',
-                                background: HomeTabColors.sageTint,
-                                borderColor: HomeTabColors.sage,
+                                background: const Color(0xFFF0EBF8),
+                                borderColor: const Color(0xFF75619A),
+                                iconColor: const Color(0xFF75619A),
                                 onTap: () => promptJoinFamily(context))),
                         SizedBox(
                             width: width,
@@ -106,6 +107,7 @@ class FamilyListTab extends StatelessWidget {
                                 subtitle: 'Bắt đầu quỹ chung',
                                 background: HomeTabColors.peachTint,
                                 borderColor: HomeTabColors.coral,
+                                iconColor: HomeTabColors.coral,
                                 onTap: () => promptCreateFamily(context))),
                       ]);
                     }),
@@ -202,13 +204,15 @@ class _ActionCard extends StatelessWidget {
       required this.subtitle,
       required this.onTap,
       required this.background,
-      required this.borderColor});
+      required this.borderColor,
+      required this.iconColor});
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
   final Color background;
   final Color borderColor;
+  final Color iconColor;
   @override
   Widget build(BuildContext context) => Material(
       color: background,
@@ -219,14 +223,14 @@ class _ActionCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(icon, color: HomeTabColors.sage, size: 22),
-                    const SizedBox(height: 6),
+                    Icon(icon, color: iconColor, size: 20),
+                    const SizedBox(height: 4),
                     Text(title, style: AppTypography.labelMd),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(subtitle,
                         style: AppTypography.bodySm
                             .copyWith(color: AppColors.outline)),

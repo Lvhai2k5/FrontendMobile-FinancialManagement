@@ -144,10 +144,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
-                        label: 'Gmail',
-                        validator: RegistrationValidators.gmail,
+                        label: 'Email',
+                        validator: RegistrationValidators.email,
                         controller: _emailController,
-                        hintText: 'ten@gmail.com',
+                        hintText: 'ten@example.com',
                         prefixIcon: Icons.mail_outline,
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],

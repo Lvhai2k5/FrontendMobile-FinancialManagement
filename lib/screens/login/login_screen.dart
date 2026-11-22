@@ -31,16 +31,6 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _showComingSoon(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature sẽ có ở bản cập nhật tiếp theo.'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.onSurface,
-      ),
-    );
-  }
-
   Future<void> _handleSubmit() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text;
@@ -66,6 +56,24 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(auth.errorMessage ?? 'Đăng nhập thất bại.'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    final auth = context.read<AuthProvider>();
+    final success = await auth.loginWithGoogle();
+    if (!mounted) return;
+    if (success) {
+      Navigator.of(context)
+          .pushNamedAndRemoveUntil(AppRoutes.home, (route) => false);
+    } else if (auth.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage!),
           behavior: SnackBarBehavior.floating,
           backgroundColor: AppColors.error,
         ),
@@ -106,9 +114,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     AppTextField(
-                      label: 'Tên tài khoản',
+                      label: 'Tên tài khoản hoặc email',
                       controller: _usernameController,
-                      hintText: 'Nhập tên tài khoản',
+                      hintText: 'Nhập tên tài khoản hoặc email',
                       prefixIcon: Icons.person_outline,
                       autofillHints: const [AutofillHints.username],
                     ),
@@ -157,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       label: 'Tiếp tục với Google',
                       variant: AppButtonVariant.secondary,
                       leadingWidget: const _GoogleMark(),
-                      onPressed: () => _showComingSoon('Đăng nhập Google'),
+                      onPressed: loading ? () {} : _handleGoogleSignIn,
                     ),
                   ],
                 ),

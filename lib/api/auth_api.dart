@@ -9,6 +9,11 @@ class AuthApi {
     return AuthResponse.fromJson(res.data as Map<String, dynamic>);
   }
 
+  Future<AuthResponse> loginWithGoogle(GoogleLoginRequest request) async {
+    final res = await apiClient.post('/auth/google', data: request.toJson());
+    return AuthResponse.fromJson(res.data as Map<String, dynamic>);
+  }
+
   /// Tạo tài khoản (chưa kích hoạt) và Backend gửi OTP `REGISTER` tới email.
   Future<void> register({
     required String name,

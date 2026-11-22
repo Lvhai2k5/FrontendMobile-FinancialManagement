@@ -157,13 +157,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       compact: true,
                       label: 'Địa chỉ Email (*)',
                       controller: _emailController,
-                      hintText: 'ten@gmail.com',
+                      hintText: 'ten@example.com',
                       prefixIcon: Icons.mail_outline,
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) =>
                           _savedEmail.isNotEmpty && value?.trim() == _savedEmail
                               ? null
-                              : RegistrationValidators.gmail(value),
+                              : RegistrationValidators.email(value),
                     ),
                   ],
                 ),

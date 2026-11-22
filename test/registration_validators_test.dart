@@ -38,6 +38,14 @@ void main() {
     }
   });
 
+  test('Email đăng ký chấp nhận các nhà cung cấp email hợp lệ', () {
+    expect(RegistrationValidators.email(''), isNotNull);
+    expect(RegistrationValidators.email('sai-email'), isNotNull);
+    expect(RegistrationValidators.email('an test@yahoo.com'), isNotNull);
+    expect(RegistrationValidators.email('an@yahoo.com'), isNull);
+    expect(RegistrationValidators.email('an@student.hcmute.edu.vn'), isNull);
+  });
+
   test('Số điện thoại chuẩn hóa khoảng cách và hỗ trợ +84', () {
     expect(RegistrationValidators.normalizePhone('0912 345 678'), '0912345678');
     expect(RegistrationValidators.phone('0912 345 678'), isNull);

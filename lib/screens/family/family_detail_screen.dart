@@ -119,13 +119,14 @@ class FamilyDetailScreen extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: AppTypography.headlineSm),
                           const SizedBox(height: 4),
-                          Row(
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
                             children: [
                               _HeaderChip(
                                   icon: Icons.verified_user_outlined,
                                   label:
                                       'Bạn là ${family.myRole.label.toLowerCase()}'),
-                              const SizedBox(width: 8),
                               _HeaderChip(
                                   icon: Icons.group_outlined,
                                   label: '${family.members.length} thành viên'),

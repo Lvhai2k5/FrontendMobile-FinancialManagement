@@ -115,18 +115,32 @@ class _PermissionsDialogState extends State<_PermissionsDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final entry in _options.entries)
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                value: _permissions.contains(entry.key),
-                title: Text(entry.value.$1),
-                subtitle: Text(entry.value.$2),
-                onChanged: (value) => setState(() {
-                  if (value == true) {
-                    _permissions.add(entry.key);
-                  } else {
-                    _permissions.remove(entry.key);
-                  }
-                }),
+              InkWell(
+                onTap: () => _toggle(entry.key),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Checkbox(
+                        value: _permissions.contains(entry.key),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        onChanged: (_) => _toggle(entry.key),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(entry.value.$1, style: AppTypography.bodyMd),
+                            Text(entry.value.$2, style: AppTypography.bodySm),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
           ],
         ),
@@ -140,6 +154,10 @@ class _PermissionsDialogState extends State<_PermissionsDialog> {
           ),
         ],
       );
+
+  void _toggle(String permission) => setState(() {
+        if (!_permissions.add(permission)) _permissions.remove(permission);
+      });
 }
 
 Future<void> changeCategoryLock(

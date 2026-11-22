@@ -13,6 +13,14 @@ class LoginRequest {
       };
 }
 
+class GoogleLoginRequest {
+  GoogleLoginRequest({required this.idToken});
+
+  final String idToken;
+
+  Map<String, dynamic> toJson() => {'idToken': idToken};
+}
+
 /// Response trả về từ `POST /api/v1/auth/login` — cặp access/refresh token
 /// theo `TECH-AUTH.md` mục 2.
 class AuthResponse {
