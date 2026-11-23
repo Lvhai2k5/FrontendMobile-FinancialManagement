@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../config/theme.dart';
 import '../../widgets/layout/home_tab_header.dart';
@@ -18,14 +19,24 @@ class ProfileTab extends StatelessWidget {
 
   final VoidCallback onEditProfile;
 
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature sẽ có ở bản cập nhật tiếp theo.'),
+  Future<void> _pickAvatar(BuildContext context) async {
+    try {
+      final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (image == null || !context.mounted) return;
+      final error = await context.read<UserProvider>().uploadAvatar(image);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(error ?? 'Đã cập nhật ảnh đại diện.'),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.onSurface,
-      ),
-    );
+        backgroundColor: error == null ? AppColors.secondary : AppColors.error,
+      ));
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Không thể mở thư viện ảnh.'),
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
   }
 
   Future<void> _handleLogout(BuildContext context) async {
@@ -72,16 +83,22 @@ class ProfileTab extends StatelessWidget {
                       CircleAvatar(
                         radius: 30,
                         backgroundColor: HomeTabColors.peachTint,
-                        child: Text(
-                            displayName.isEmpty
-                                ? '?'
-                                : displayName
-                                    .trim()
-                                    .split(RegExp(r'\s+'))
-                                    .last[0]
-                                    .toUpperCase(),
-                            style: AppTypography.headlineLgMobile
-                                .copyWith(color: HomeTabColors.coral)),
+                        backgroundImage:
+                            (user?.avatar?.startsWith('http') ?? false)
+                                ? NetworkImage(user!.avatar!)
+                                : null,
+                        child: (user?.avatar?.startsWith('http') ?? false)
+                            ? null
+                            : Text(
+                                displayName.isEmpty
+                                    ? '?'
+                                    : displayName
+                                        .trim()
+                                        .split(RegExp(r'\s+'))
+                                        .last[0]
+                                        .toUpperCase(),
+                                style: AppTypography.headlineLgMobile
+                                    .copyWith(color: HomeTabColors.coral)),
                       ),
                       Positioned(
                         right: 0,
@@ -91,8 +108,7 @@ class ProfileTab extends StatelessWidget {
                           shape: const CircleBorder(),
                           child: InkWell(
                             customBorder: const CircleBorder(),
-                            onTap: () =>
-                                _showComingSoon(context, 'Đổi ảnh đại diện'),
+                            onTap: () => _pickAvatar(context),
                             child: const Padding(
                               padding: EdgeInsets.all(6),
                               child: Icon(Icons.camera_alt,
@@ -221,7 +237,7 @@ class ProfileTab extends StatelessWidget {
                   title: 'Thay đổi mật khẩu',
                   subtitle: 'Cập nhật mật khẩu bảo vệ tài khoản',
                   onTap: () =>
-                      Navigator.of(context).pushNamed(AppRoutes.forgotPassword),
+                      Navigator.of(context).pushNamed(AppRoutes.changePassword),
                 ),
                 const Divider(height: 1),
                 _MenuTile(

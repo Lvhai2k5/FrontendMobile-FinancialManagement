@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../config/theme.dart';
 import '../../providers/user_provider.dart';
@@ -20,10 +21,9 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  late String _savedEmail;
   bool _saving = false;
+  bool _uploadingAvatar = false;
 
   @override
   void initState() {
@@ -32,41 +32,56 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final user = context.read<UserProvider>().user;
     _nameController.text = user?.name ?? '';
     _phoneController.text = user?.phone ?? '';
-    _savedEmail = user?.email.trim() ?? '';
-    _emailController.text = _savedEmail;
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _emailController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     if (_saving || !_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
-    final email = _emailController.text.trim();
     final error = await context.read<UserProvider>().updateProfile(
           name: _nameController.text.trim(),
           phone: RegistrationValidators.normalizePhone(_phoneController.text),
-          email: email,
         );
     if (!mounted) return;
     setState(() {
       _saving = false;
-      if (error == null) _savedEmail = email;
     });
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(error ?? 'Đã lưu thay đổi.'),
       behavior: SnackBarBehavior.floating,
       backgroundColor: error == null ? AppColors.secondary : AppColors.error,
     ));
+    if (error == null) {
+      if (widget.onClose != null) {
+        widget.onClose!();
+      } else {
+        await Navigator.of(context).maybePop();
+      }
+    }
+  }
+
+  Future<void> _pickAvatar() async {
+    final image = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (image == null || !mounted) return;
+    setState(() => _uploadingAvatar = true);
+    final error = await context.read<UserProvider>().uploadAvatar(image);
+    if (!mounted) return;
+    setState(() => _uploadingAvatar = false);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(error ?? 'Đã cập nhật ảnh đại diện.'),
+      backgroundColor: error == null ? AppColors.secondary : AppColors.error,
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
+    final avatar = context.watch<UserProvider>().user?.avatar;
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -89,25 +104,43 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   CircleAvatar(
                     radius: 42,
                     backgroundColor: AppColors.pastelBlush,
-                    child: Text(
-                        _nameController.text.trim().isEmpty
-                            ? '?'
-                            : _nameController.text
-                                .trim()
-                                .split(RegExp(r'\s+'))
-                                .last[0]
-                                .toUpperCase(),
-                        style: AppTypography.pageTitle
-                            .copyWith(color: AppColors.primary)),
+                    backgroundImage: (avatar?.startsWith('http') ?? false)
+                        ? NetworkImage(avatar!)
+                        : null,
+                    child: (avatar?.startsWith('http') ?? false)
+                        ? null
+                        : Text(
+                            _nameController.text.trim().isEmpty
+                                ? '?'
+                                : _nameController.text
+                                    .trim()
+                                    .split(RegExp(r'\s+'))
+                                    .last[0]
+                                    .toUpperCase(),
+                            style: AppTypography.pageTitle
+                                .copyWith(color: AppColors.primary)),
                   ),
                   Positioned(
                     right: 0,
                     bottom: 0,
-                    child: CircleAvatar(
-                      radius: 15,
-                      backgroundColor: AppColors.primary,
-                      child: const Icon(Icons.camera_alt,
-                          size: 14, color: Colors.white),
+                    child: Material(
+                      color: AppColors.primary,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: _uploadingAvatar ? null : _pickAvatar,
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: _uploadingAvatar
+                              ? const SizedBox.square(
+                                  dimension: 14,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.camera_alt,
+                                  size: 14, color: Colors.white),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -153,17 +186,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       validator: RegistrationValidators.phone,
                     ),
                     const SizedBox(height: 12),
-                    AppTextField(
-                      compact: true,
-                      label: 'Địa chỉ Email (*)',
-                      controller: _emailController,
-                      hintText: 'ten@example.com',
-                      prefixIcon: Icons.mail_outline,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (value) =>
-                          _savedEmail.isNotEmpty && value?.trim() == _savedEmail
-                              ? null
-                              : RegistrationValidators.email(value),
+                    TextFormField(
+                      initialValue:
+                          context.read<UserProvider>().user?.email ?? '',
+                      readOnly: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Địa chỉ Email',
+                        prefixIcon: Icon(Icons.mail_outline),
+                        helperText: 'Email không thể thay đổi tại đây.',
+                      ),
                     ),
                   ],
                 ),

@@ -287,17 +287,14 @@ class _OverviewSection extends StatelessWidget {
   const _OverviewSection({
     required this.title,
     required this.child,
-    this.initiallyExpanded = false,
   });
 
   final String title;
   final Widget child;
-  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) => ExpansionTile(
         key: PageStorageKey(title),
-        initiallyExpanded: initiallyExpanded,
         tilePadding: EdgeInsets.zero,
         expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
         shape: const Border(),
