@@ -15,6 +15,7 @@ import '../screens/reset_password/reset_password_screen.dart';
 import '../screens/transaction/transaction_detail_screen.dart';
 import '../screens/transaction/transaction_form_screen.dart';
 import '../screens/transaction/transaction_list_tab.dart';
+import '../screens/transaction/transaction_scan_screen.dart';
 import '../screens/transaction/transaction_voice_screen.dart';
 import '../screens/welcome/welcome_screen.dart';
 
@@ -40,6 +41,7 @@ class AppRoutes {
   static const String transactionForm = '/transaction-form';
   static const String transactionFormPrefilled = '/transaction-form-prefilled';
   static const String transactionVoice = '/transaction-voice';
+  static const String transactionScan = '/transaction-scan';
   static const String familyTransactions = '/family-transactions';
   static const String transactionDetail = '/transaction-detail';
   static const String editProfile = '/edit-profile';
@@ -107,6 +109,11 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) =>
               TransactionVoiceScreen(familyId: settings.arguments as int?),
+        );
+      case transactionScan:
+        return MaterialPageRoute(
+          builder: (_) =>
+              TransactionScanScreen(familyId: settings.arguments as int?),
         );
       case editProfile:
         return MaterialPageRoute(builder: (_) => const EditProfileScreen());

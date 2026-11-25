@@ -49,7 +49,8 @@ dependencies:
   google_fonts: ^6.3.3
   # Ghi chi tiêu bằng giọng nói: STT native tiếng Việt trên thiết bị
   speech_to_text: ^7.4.0
-  image_picker: 1.1.2
+  # Quét đồ vật: chụp/chọn ảnh rồi nén trước khi gửi Backend nhận diện
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:

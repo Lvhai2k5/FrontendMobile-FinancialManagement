@@ -264,6 +264,8 @@ void main() {
                           'Nhập cho tổ ấm ${ModalRoute.of(context)!.settings.arguments}')),
                   AppRoutes.transactionVoice: (_) =>
                       const Scaffold(body: Text('Màn ghi âm giọng nói')),
+                  AppRoutes.transactionScan: (_) =>
+                      const Scaffold(body: Text('Màn quét đồ vật')),
                   AppRoutes.supportFeedback: (_) =>
                       const Scaffold(body: Text('Biểu mẫu hỗ trợ')),
                   AppRoutes.changePassword: (_) =>
@@ -506,14 +508,18 @@ void main() {
     await tester.tap(find.descendant(
         of: find.byType(BottomNavBar), matching: find.text('Giao dịch')));
     await tester.pumpAndSettle();
-    for (final name in ['Quét hoá đơn', 'Quét đồ vật']) {
-      await tester.tap(find.text(name));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('sẽ có ở bản cập nhật tiếp theo'),
-          findsOneWidget);
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
-    }
+    await tester.tap(find.text('Quét hoá đơn'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('sẽ có ở bản cập nhật tiếp theo'),
+        findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    // "Quét đồ vật" đã hoạt động: mở màn quét riêng, không còn "sắp có".
+    await tester.tap(find.text('Quét đồ vật'));
+    await tester.pumpAndSettle();
+    expect(find.text('Màn quét đồ vật'), findsOneWidget);
+    Navigator.of(tester.element(find.text('Màn quét đồ vật'))).pop();
+    await tester.pumpAndSettle();
     // "Ghi âm giọng nói" đã hoạt động: mở màn ghi âm riêng, không còn "sắp có".
     await tester.tap(find.text('Ghi âm giọng nói'));
     await tester.pumpAndSettle();
