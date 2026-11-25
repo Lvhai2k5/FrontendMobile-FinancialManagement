@@ -1,5 +1,6 @@
 import 'api_client.dart';
 import '../models/family_model.dart';
+import '../models/overview_model.dart';
 
 /// Gọi endpoint gia đình/danh mục tài chính (`/api/v1/families`,
 /// `/api/v1/financial-categories`). Chỉ gửi/nhận JSON, không giữ state.
@@ -14,6 +15,11 @@ class FamilyApi {
   Future<FamilyDetailModel> detail(int familyId) async {
     final res = await apiClient.get('/families/$familyId');
     return FamilyDetailModel.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  Future<OverviewModel> overview(int familyId) async {
+    final res = await apiClient.get('/families/$familyId/overview');
+    return OverviewModel.fromJson(res.data as Map<String, dynamic>);
   }
 
   Future<FamilyDetailModel> create(String name) async {

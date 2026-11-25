@@ -151,14 +151,13 @@ class _TransactionListTabState extends State<TransactionListTab> {
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
                   mainAxisExtent:
-                      54 + MediaQuery.textScalerOf(context).scale(48),
+                      54 + MediaQuery.textScalerOf(context).scale(56),
                   children: [
                     _MethodCard(
                       icon: Icons.edit_note,
                       fill: HomeTabColors.sageTint,
                       ink: HomeTabColors.sage,
                       title: 'Nhập thủ công',
-                      subtitle: 'Điền biểu mẫu',
                       onTap: () => Navigator.of(context).pushNamed(
                         AppRoutes.transactionForm,
                         arguments:
@@ -188,7 +187,11 @@ class _TransactionListTabState extends State<TransactionListTab> {
                       fill: AppColors.pastelLavender,
                       ink: const Color(0xFF604675),
                       title: 'Quét đồ vật',
-                      onTap: () => _showComingSoon('Quét đồ vật'),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        AppRoutes.transactionScan,
+                        arguments:
+                            context.read<FamilyProvider>().selectedFamilyId,
+                      ),
                     ),
                   ],
                 ),
@@ -436,7 +439,6 @@ class _MethodCard extends StatelessWidget {
     required this.fill,
     required this.ink,
     required this.title,
-    this.subtitle,
     required this.onTap,
   });
 
@@ -444,7 +446,6 @@ class _MethodCard extends StatelessWidget {
   final Color fill;
   final Color ink;
   final String title;
-  final String? subtitle;
   final VoidCallback onTap;
 
   @override
@@ -469,9 +470,6 @@ class _MethodCard extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: AppTypography.labelMd
                       .copyWith(fontWeight: FontWeight.w600)),
-              if (subtitle case final text?)
-                Text(text,
-                    textAlign: TextAlign.center, style: AppTypography.bodySm),
             ],
           ),
         ),

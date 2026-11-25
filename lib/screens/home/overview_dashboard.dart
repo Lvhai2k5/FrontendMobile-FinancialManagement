@@ -5,6 +5,7 @@ import '../../widgets/layout/home_tab_header.dart';
 import '../../models/family_model.dart';
 import '../../utils/format_currency.dart';
 import '../../utils/overview_summary.dart';
+import '../../models/overview_model.dart';
 import '../../utils/category_usage_status.dart';
 import '../../widgets/family/category_progress_tile.dart';
 
@@ -15,10 +16,10 @@ class OverviewBalanceCard extends StatelessWidget {
   const OverviewBalanceCard(
       {super.key,
       required this.family,
-      required this.summary,
+      required this.overview,
       required this.reportAvailable});
   final FamilyDetailModel family;
-  final OverviewSummary summary;
+  final OverviewModel? overview;
   final bool reportAvailable;
 
   @override
@@ -114,8 +115,12 @@ class OverviewBalanceCard extends StatelessWidget {
                 child: FittedBox(
                   alignment: AlignmentDirectional.centerEnd,
                   fit: BoxFit.scaleDown,
-                  child: Text('${formatCurrency(family.totalBudget)} đ',
-                      style: AppTypography.amountMd),
+                  child: Text(
+                    overview == null
+                        ? '—'
+                        : '${formatCurrency(overview?.balance ?? 0)} đ',
+                    style: AppTypography.amountMd,
+                  ),
                 ),
               ),
             ],
@@ -123,9 +128,9 @@ class OverviewBalanceCard extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(child: _stat('Thu trong kỳ', summary.income, '+')),
+          Expanded(child: _stat('Tổng thu', overview?.income ?? 0, '+')),
           const SizedBox(width: 8),
-          Expanded(child: _stat('Chi trong kỳ', summary.expense, '−')),
+          Expanded(child: _stat('Tổng chi', overview?.expense ?? 0, '−')),
         ]),
       ]),
     );
@@ -163,6 +168,8 @@ class OverviewFlowChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasTransactions =
+        buckets.any((bucket) => bucket.summary.transactions.isNotEmpty);
     final peak = buckets.fold<double>(
         0,
         (value, b) =>
@@ -245,6 +252,7 @@ class OverviewFlowChart extends StatelessWidget {
                 )),
             Expanded(
                 child: SingleChildScrollView(
+              key: const PageStorageKey<String>('overview-flow-chart-scroll'),
               scrollDirection: Axis.horizontal,
               child: SizedBox(
                   width: width,
@@ -306,16 +314,18 @@ class OverviewFlowChart extends StatelessWidget {
                 : 'Mỗi cặp cột tối đa 7 ngày; nhãn là ngày bắt đầu.',
             style: AppTypography.bodySm),
         const Divider(height: 24),
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.insights_outlined,
-              color: HomeTabColors.coral, size: 22),
-          const SizedBox(width: 8),
-          Expanded(child: Text(insight, style: AppTypography.bodyMd)),
-        ]),
-        Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-                onPressed: onDetails, child: const Text('Xem chi tiết →'))),
+        if (peak > 0)
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Icon(Icons.insights_outlined,
+                color: HomeTabColors.coral, size: 22),
+            const SizedBox(width: 8),
+            Expanded(child: Text(insight, style: AppTypography.bodyMd)),
+          ]),
+        if (hasTransactions)
+          Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                  onPressed: onDetails, child: const Text('Xem chi tiết →'))),
       ]),
     );
   }
@@ -401,9 +411,6 @@ class OverviewJars extends StatelessWidget {
                       Text(category.amountOfEmergency > 0
                           ? 'Ngưỡng khẩn cấp: ${formatCurrency(category.amountOfEmergency)} đ'
                           : 'Ngưỡng khẩn cấp: Đã tắt'),
-                      const SizedBox(height: 12),
-                      const Text(
-                          'Số liệu danh mục là tổng đã chi do hệ thống ghi nhận, không phụ thuộc bộ lọc ngày báo cáo.'),
                     ]))));
   }
 
@@ -416,11 +423,9 @@ class OverviewJars extends StatelessWidget {
     final alertColor =
         hasRed ? AppColors.error : CategoryUsageStatus.warning.color;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('${categories.length} danh mục chi tiêu · Số tiền rút gọn',
+      Text('${categories.length} danh mục chi tiêu',
           style: AppTypography.bodySm),
       const SizedBox(height: 6),
-      Text('Tổng đã chi của danh mục · Không theo bộ lọc ngày',
-          style: AppTypography.bodySm.copyWith(color: AppColors.outline)),
       const SizedBox(height: 12),
       if (categories.isNotEmpty) ...[
         Row(

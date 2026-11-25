@@ -211,7 +211,7 @@ void main() {
     expect(user.saved, isNull);
     expect(find.textContaining('Nhập họ tên bằng chữ'), findsOneWidget);
     expect(find.textContaining('Số điện thoại cần đúng'), findsOneWidget);
-    expect(find.textContaining('kết thúc bằng @gmail.com'), findsOneWidget);
+    expect(find.textContaining('kết thúc bằng @gmail.com'), findsNothing);
 
     await tester.enterText(fields.at(0), 'Nguyễn An');
     await tester.enterText(fields.at(1), '+84 912 345 678');
@@ -271,6 +271,8 @@ void main() {
                           'Nhập cho tổ ấm ${ModalRoute.of(context)!.settings.arguments}')),
                   AppRoutes.transactionVoice: (_) =>
                       const Scaffold(body: Text('Màn ghi âm giọng nói')),
+                  AppRoutes.transactionScan: (_) =>
+                      const Scaffold(body: Text('Màn quét đồ vật')),
                   AppRoutes.supportFeedback: (_) =>
                       const Scaffold(body: Text('Biểu mẫu hỗ trợ')),
                   AppRoutes.forgotPassword: (_) =>
@@ -375,8 +377,16 @@ void main() {
       (tester) async {
     await open(tester, Families(List.generate(30, (i) => family(i + 1))));
     expect(find.text('Đang tham gia 30 gia đình'), findsOneWidget);
-    expect(find.text('Chủ hộ 1'), findsOneWidget);
-    expect(find.text('Thành viên 29'), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('family-card-1')),
+            matching: find.text('Chủ hộ')),
+        findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(const ValueKey('family-card-2')),
+            matching: find.text('Thành viên')),
+        findsOneWidget);
     expect(find.text('Tổ ấm thử nghiệm 30'), findsNothing);
     await capture(tester, 'family-multiple');
     await tester.scrollUntilVisible(
@@ -505,14 +515,18 @@ void main() {
     await tester.tap(find.descendant(
         of: find.byType(BottomNavBar), matching: find.text('Giao dịch')));
     await tester.pumpAndSettle();
-    for (final name in ['Quét hoá đơn', 'Quét đồ vật']) {
-      await tester.tap(find.text(name));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('sẽ có ở bản cập nhật tiếp theo'),
-          findsOneWidget);
-      await tester.pump(const Duration(seconds: 5));
-      await tester.pumpAndSettle();
-    }
+    await tester.tap(find.text('Quét hoá đơn'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('sẽ có ở bản cập nhật tiếp theo'),
+        findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    // "Quét đồ vật" đã hoạt động: mở màn quét riêng, không còn "sắp có".
+    await tester.tap(find.text('Quét đồ vật'));
+    await tester.pumpAndSettle();
+    expect(find.text('Màn quét đồ vật'), findsOneWidget);
+    Navigator.of(tester.element(find.text('Màn quét đồ vật'))).pop();
+    await tester.pumpAndSettle();
     // "Ghi âm giọng nói" đã hoạt động: mở màn ghi âm riêng, không còn "sắp có".
     await tester.tap(find.text('Ghi âm giọng nói'));
     await tester.pumpAndSettle();

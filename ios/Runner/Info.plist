@@ -47,5 +47,9 @@
 	<string>FinNest dùng micro để ghi chi tiêu bằng giọng nói.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>FinNest nhận diện giọng nói để điền sẵn giao dịch cho bạn xác nhận.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>FinNest dùng camera để chụp đồ vật cần ghi chi tiêu.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>FinNest cần chọn ảnh đồ vật từ thư viện để nhận diện.</string>
 </dict>
 </plist>

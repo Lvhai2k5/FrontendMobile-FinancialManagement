@@ -123,7 +123,7 @@ void main() {
       (tester) async {
     await _open(tester, [_family(1)], _Transactions(), width: 320, scale: 1.3);
 
-    expect(find.text('Tổ ấm'), findsOneWidget);
+    expect(find.text('Gia đình'), findsOneWidget);
     expect(find.text('Nhà 1'), findsOneWidget);
     expect(find.text('Hũ 1'), findsOneWidget);
     final dropdown =
@@ -134,7 +134,7 @@ void main() {
     final titleStyle = DefaultTextStyle.of(context).style;
     expect(titleStyle.fontFamily, AppTypography.fontFamily);
     expect(titleStyle.fontSize, AppTypography.headlineSm.fontSize);
-    final labels = ['Tổ ấm', 'Nội dung', 'Số tiền', 'Danh mục'];
+    final labels = ['Gia đình', 'Nội dung', 'Số tiền', 'Danh mục'];
     for (final label in labels) {
       final style = tester.widget<Text>(find.text(label)).style;
       expect(style?.fontFamily, AppTypography.fontFamily);

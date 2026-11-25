@@ -153,7 +153,9 @@ class _VoiceBodyState extends State<_VoiceBody> {
                         AppRoutes.transactionForm,
                         arguments: widget.familyId,
                       ),
-              child: const Text('Nhập thủ công'),
+              child: Text('Nhập thủ công',
+                  style: AppTypography.titleSm
+                      .copyWith(fontSize: 18, fontWeight: FontWeight.w700)),
             ),
           ],
         ],
