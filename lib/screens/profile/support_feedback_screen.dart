@@ -33,6 +33,9 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
   void initState() {
     super.initState();
     _contentController.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<UserProvider>().loadSupportTickets();
+    });
   }
 
   @override
@@ -75,8 +78,7 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
     if (!mounted) return;
     setState(() => _sending = false);
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(error ??
-          'Đã gửi phản ánh tới Admin. Chúng tôi phản hồi trong 30 phút.'),
+      content: Text(error ?? 'Đã gửi phản ánh tới Admin.'),
       behavior: SnackBarBehavior.floating,
       backgroundColor: error == null ? AppColors.secondary : AppColors.error,
     ));
@@ -107,10 +109,118 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
         ),
       );
 
+  String _ticketStatusLabel(Object? status) => switch (status?.toString()) {
+        'SUBMITTED' => 'Đã gửi',
+        'VIEWED' => 'Đang xem xét',
+        'RESPONDED' => 'Đã phản hồi',
+        final value when value != null && value.isNotEmpty => value,
+        _ => 'Chưa rõ trạng thái',
+      };
+
+  Color _ticketStatusColor(Object? status) => switch (status?.toString()) {
+        'RESPONDED' => AppColors.secondary,
+        'VIEWED' => AppColors.primary,
+        _ => AppColors.outline,
+      };
+
+  String _ticketDate(Object? createdAt) {
+    final date = DateTime.tryParse(createdAt?.toString() ?? '')?.toLocal();
+    if (date == null) return 'Thời gian chưa có';
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    return '${twoDigits(date.day)}/${twoDigits(date.month)}/${date.year} · '
+        '${twoDigits(date.hour)}:${twoDigits(date.minute)}';
+  }
+
+  String _ticketTitle(String content) {
+    for (final prefix in ['Tiêu đề:', 'Sự cố:']) {
+      for (final line in content.split('\n')) {
+        if (line.startsWith(prefix)) {
+          final value = line.substring(prefix.length).trim();
+          if (value.isNotEmpty) return value;
+        }
+      }
+    }
+    final nonEmptyLines = content
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .toList();
+    return nonEmptyLines.isEmpty ? 'Yêu cầu hỗ trợ' : nonEmptyLines.last;
+  }
+
+  Widget _ticketStatusBadge(Object? status) {
+    final color = _ticketStatusColor(status);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        _ticketStatusLabel(status),
+        style: AppTypography.labelSm.copyWith(color: color),
+      ),
+    );
+  }
+
+  Widget _supportTicketTile(Map<String, dynamic> ticket) {
+    final content = ticket['content'] as String? ?? '';
+    final respondentNote = ticket['noteOfRespondent'] as String?;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        shape: const Border(),
+        collapsedShape: const Border(),
+        title: Text(
+          _ticketTitle(content),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.bodyMd,
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(_ticketDate(ticket['createdAt']),
+              style: AppTypography.labelSm.copyWith(color: AppColors.outline)),
+        ),
+        trailing: _ticketStatusBadge(ticket['status']),
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Nội dung đã gửi', style: AppTypography.labelMd),
+          ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(content, style: AppTypography.bodySm),
+          ),
+          if (respondentNote != null && respondentNote.trim().isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Phản hồi từ Admin', style: AppTypography.labelMd),
+            ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(respondentNote, style: AppTypography.bodySm),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final families = context.watch<FamilyProvider>().families;
     final user = context.watch<UserProvider>().user;
+    final userProvider = context.watch<UserProvider>();
     final transactions = context
         .watch<TransactionProvider>()
         .transactions
@@ -130,10 +240,11 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
         elevation: 0,
         foregroundColor: AppColors.onSurface,
         title: const Text('Gửi Phản Ánh & Khiếu Nại'),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: Icon(Icons.help_outline),
+        actions: [
+          IconButton(
+            tooltip: 'Tải lại yêu cầu',
+            onPressed: () => context.read<UserProvider>().loadSupportTickets(),
+            icon: const Icon(Icons.refresh),
           ),
         ],
       ),
@@ -176,17 +287,40 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
                       ],
                     ),
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.pastelBlush,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text('SLA 30p',
-                        style: AppTypography.labelSm
-                            .copyWith(color: AppColors.primary)),
-                  ),
+                ],
+              ),
+              const Divider(height: 28),
+              ExpansionTile(
+                key: const PageStorageKey('support-tickets'),
+                tilePadding: EdgeInsets.zero,
+                expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+                shape: const Border(),
+                collapsedShape: const Border(),
+                title: Text(
+                  'Yêu cầu đã gửi (${userProvider.supportTickets.length})',
+                  style: AppTypography.titleSm,
+                ),
+                children: [
+                  if (userProvider.loadingSupportTickets)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (userProvider.supportTicketsError != null)
+                    Text(userProvider.supportTicketsError!,
+                        style: AppTypography.bodySm
+                            .copyWith(color: AppColors.error))
+                  else if (userProvider.supportTickets.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text('Chưa có yêu cầu hỗ trợ.',
+                          style: AppTypography.bodySm),
+                    )
+                  else
+                    for (final ticket in userProvider.supportTickets)
+                      _supportTicketTile(ticket),
                 ],
               ),
               const Divider(height: 28),
@@ -265,10 +399,6 @@ class _SupportFeedbackScreenState extends State<SupportFeedbackScreen> {
                       children: [
                         Text('Quy trình xử lý dự kiến',
                             style: AppTypography.titleSm),
-                        const Spacer(),
-                        Text('Cam kết SLA 30p',
-                            style: AppTypography.labelSm
-                                .copyWith(color: AppColors.primary)),
                       ],
                     ),
                     const SizedBox(height: 8),

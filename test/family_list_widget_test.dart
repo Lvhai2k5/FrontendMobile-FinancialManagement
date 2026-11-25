@@ -119,7 +119,7 @@ class Notifications extends NotificationProvider {
 }
 
 class User extends UserProvider {
-  ({String name, String phone, String email})? saved;
+  ({String name, String phone})? saved;
 
   @override
   Future<void> load() async {}
@@ -128,9 +128,8 @@ class User extends UserProvider {
   Future<String?> updateProfile({
     required String name,
     required String phone,
-    required String email,
   }) async {
-    saved = (name: name, phone: phone, email: email);
+    saved = (name: name, phone: phone);
     return null;
   }
 }
@@ -204,28 +203,22 @@ void main() {
     expect(find.textContaining('qua email.'), findsNothing);
     await tester.enterText(fields.at(0), 'An 123');
     await tester.enterText(fields.at(1), '123');
-    await tester.enterText(fields.at(2), 'an@other.example');
+    final emailInput =
+        find.descendant(of: fields.at(2), matching: find.byType(TextField));
+    expect(tester.widget<TextField>(emailInput).readOnly, isTrue);
     await tester.ensureVisible(save);
     await tester.tap(save);
     await tester.pumpAndSettle();
     expect(user.saved, isNull);
     expect(find.textContaining('Nhập họ tên bằng chữ'), findsOneWidget);
     expect(find.textContaining('Số điện thoại cần đúng'), findsOneWidget);
-    expect(find.textContaining('kết thúc bằng @gmail.com'), findsNothing);
 
     await tester.enterText(fields.at(0), 'Nguyễn An');
     await tester.enterText(fields.at(1), '+84 912 345 678');
-    await tester.enterText(fields.at(2), 'an@example.com');
     await tester.ensureVisible(save);
     await tester.tap(save);
     await tester.pumpAndSettle();
-    expect(user.saved?.email, 'an@example.com');
-    await tester.enterText(fields.at(2), 'an@gmail.com');
-    await tester.ensureVisible(save);
-    await tester.tap(save);
-    await tester.pumpAndSettle();
-    expect(user.saved,
-        (name: 'Nguyễn An', phone: '0912345678', email: 'an@gmail.com'));
+    expect(user.saved, (name: 'Nguyễn An', phone: '0912345678'));
     expect(find.byType(EditProfileScreen), findsOneWidget);
     expect(find.text('Đã lưu thay đổi.'), findsOneWidget);
   });
@@ -275,8 +268,8 @@ void main() {
                       const Scaffold(body: Text('Màn quét đồ vật')),
                   AppRoutes.supportFeedback: (_) =>
                       const Scaffold(body: Text('Biểu mẫu hỗ trợ')),
-                  AppRoutes.forgotPassword: (_) =>
-                      const Scaffold(body: Text('Luồng mật khẩu')),
+                  AppRoutes.changePassword: (_) =>
+                      const Scaffold(body: Text('Luồng đổi mật khẩu')),
                   AppRoutes.notifications: (_) =>
                       const Scaffold(body: Text('Danh sách thông báo')),
                   AppRoutes.welcome: (_) =>
@@ -622,7 +615,7 @@ void main() {
     expect(find.text('Chỉnh sửa thông tin cá nhân'), findsOneWidget);
     for (final (label, destination) in [
       ('Tổ ấm thử nghiệm 2', 'Chi tiết 2'),
-      ('Thay đổi mật khẩu', 'Luồng mật khẩu'),
+      ('Thay đổi mật khẩu', 'Luồng đổi mật khẩu'),
       ('Gửi thông tin cần hỗ trợ', 'Biểu mẫu hỗ trợ'),
     ]) {
       final action = find.text(label);

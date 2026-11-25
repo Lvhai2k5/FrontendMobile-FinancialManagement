@@ -272,7 +272,7 @@ class _ThresholdCard extends StatelessWidget {
               Switch(
                 value: enabled,
                 onChanged: editable ? onToggle : null,
-                activeColor: Colors.white,
+                activeThumbColor: Colors.white,
                 activeTrackColor: AppColors.primary,
               ),
             ],

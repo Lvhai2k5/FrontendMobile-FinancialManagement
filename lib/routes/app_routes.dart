@@ -8,6 +8,7 @@ import '../screens/login/login_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/otp/otp_verify_screen.dart';
 import '../screens/profile/edit_profile_screen.dart';
+import '../screens/profile/change_password_screen.dart';
 import '../screens/profile/support_feedback_screen.dart';
 import '../screens/register/register_screen.dart';
 import '../screens/reset_password/reset_password_screen.dart';
@@ -45,6 +46,7 @@ class AppRoutes {
   static const String transactionDetail = '/transaction-detail';
   static const String editProfile = '/edit-profile';
   static const String supportFeedback = '/support-feedback';
+  static const String changePassword = '/change-password';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -117,6 +119,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => const EditProfileScreen());
       case supportFeedback:
         return MaterialPageRoute(builder: (_) => const SupportFeedbackScreen());
+      case changePassword:
+        return MaterialPageRoute(builder: (_) => const ChangePasswordScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(

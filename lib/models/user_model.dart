@@ -7,6 +7,7 @@ class UserModel {
     required this.email,
     required this.phone,
     required this.role,
+    this.avatar,
   });
 
   final int personId;
@@ -15,6 +16,7 @@ class UserModel {
   final String email;
   final String phone;
   final String role;
+  final String? avatar;
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
         personId: (json['personId'] as num?)?.toInt() ?? 0,
@@ -23,5 +25,6 @@ class UserModel {
         email: json['email'] as String? ?? '',
         phone: json['phone'] as String? ?? '',
         role: json['role'] as String? ?? 'USER',
+        avatar: json['avatar'] as String?,
       );
 }
